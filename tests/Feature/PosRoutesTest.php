@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Category;
 use App\Models\InventoryItem;
 use App\Models\Invoice;
+use App\Models\MenuItem;
 use App\Models\Sale;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -22,7 +23,7 @@ class PosRoutesTest extends TestCase
 
     protected function getAdminUser(): User
     {
-        return User::where('email', 'admin@restaurant.com')->first();
+        return User::where('email', 'admin@khajapos.com')->first();
     }
 
     public function test_dashboard_renders_for_authenticated_user(): void
@@ -56,6 +57,18 @@ class PosRoutesTest extends TestCase
     {
         $admin = $this->getAdminUser();
         $this->actingAs($admin)->get('/categories')->assertStatus(200);
+    }
+
+    public function test_menu_management_pages_render(): void
+    {
+        $admin = $this->getAdminUser();
+        $this->actingAs($admin)->get('/menu')->assertStatus(200);
+        $this->actingAs($admin)->get('/menu/create')->assertStatus(200);
+
+        $item = MenuItem::first();
+        if ($item) {
+            $this->actingAs($admin)->get("/menu/{$item->id}/edit")->assertStatus(200);
+        }
     }
 
     public function test_sales_and_invoices_pages_render(): void
