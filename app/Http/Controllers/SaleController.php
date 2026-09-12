@@ -34,7 +34,7 @@ class SaleController extends Controller
 
     public function show(Sale $sale)
     {
-        $sale->load(['items.inventoryItem', 'user', 'invoice', 'payments']);
+        $sale->load(['items.menuItem', 'user', 'invoice', 'payments']);
         return view('sales.show', compact('sale'));
     }
 }

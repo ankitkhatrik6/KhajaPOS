@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
-use App\Models\InventoryItem;
+use App\Models\MenuItem;
 use App\Models\RestaurantSetting;
 use App\Services\PosService;
 use App\Services\SaleService;
@@ -25,14 +25,10 @@ class PosController extends Controller
     public function index(Request $request)
     {
         $categories = Category::where('is_active', true)
-            ->whereNotIn('slug', ['raw-materials', 'packaging'])
+            ->whereHas('menuItems', fn ($q) => $q->where('is_available', true))
             ->get();
 
-        $query = InventoryItem::where('status', 'active')
-            ->whereHas('category', function ($q) {
-                $q->whereNotIn('slug', ['raw-materials', 'packaging']);
-            })
-            ->with('category');
+        $query = MenuItem::available()->with('category');
 
         if ($request->filled('category')) {
             $query->where('category_id', $request->category);
@@ -50,7 +46,7 @@ class PosController extends Controller
 
     public function quickStockCheck($id)
     {
-        $item = InventoryItem::find($id);
+        $item = MenuItem::find($id);
         if (!$item) {
             return response()->json(['error' => 'Item not found'], 404);
         }
@@ -59,11 +55,10 @@ class PosController extends Controller
             'id' => $item->id,
             'name' => $item->name,
             'sku' => $item->sku,
-            'price' => (float)$item->selling_price,
+            'price' => (float)$item->price,
             'unit' => $item->unit,
-            'current_quantity' => (float)$item->current_quantity,
-            'minimum_stock' => (float)$item->minimum_stock,
-            'status' => $item->stock_status,
+            'is_available' => $item->is_available,
+            'category' => $item->category->name ?? null,
         ]);
     }
 
@@ -71,7 +66,7 @@ class PosController extends Controller
     {
         $request->validate([
             'items' => ['required', 'array', 'min:1'],
-            'items.*.item_id' => ['required', 'integer', 'exists:inventory_items,id'],
+            'items.*.item_id' => ['required', 'integer', 'exists:menu_items,id', 'exists:menu_items,id,is_available,1'],
             'items.*.quantity' => ['required', 'numeric', 'min:0.01'],
             'customer_name' => ['nullable', 'string', 'max:150'],
             'discount' => ['nullable', 'numeric', 'min:0'],
