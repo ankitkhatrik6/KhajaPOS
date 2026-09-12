@@ -96,11 +96,9 @@ class MenuItemController extends Controller
 
     public function destroy(MenuItem $item)
     {
-        if ($item->saleItems()->count() > 0) {
-            return back()->with('error', "Cannot delete '{$item->name}' because historical sales exist. You can hide it from the menu instead.");
-        }
-
+        // Deletion is safe even when historical sales exist: sale_items stores
+        // its own item_name / unit_price snapshot and the FK is ON DELETE SET NULL.
         $item->delete();
-        return redirect()->route('menu.index')->with('success', "Menu item deleted successfully.");
+        return redirect()->route('menu.index')->with('success', "Menu item '{$item->name}' deleted successfully.");
     }
 }

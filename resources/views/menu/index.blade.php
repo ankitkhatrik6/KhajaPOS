@@ -107,7 +107,7 @@
                                         {{ $item->is_available ? 'Hide' : 'Show' }}
                                     </button>
                                 </form>
-                                <form action="{{ route('menu.destroy', $item->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete {{ $item->name }}? This is not possible if it has sales history.')">
+                                <form action="{{ route('menu.destroy', $item->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete {{ $item->name }}? Historical sales will be kept.')">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="p-1 rounded text-rose-500 hover:bg-rose-50" title="Delete item">
