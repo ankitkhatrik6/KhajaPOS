@@ -25,7 +25,7 @@
                         {{ $category->is_active ? 'Active' : 'Inactive' }}
                     </span>
                     <span class="text-xs font-semibold text-slate-400">
-                        {{ $category->inventory_items_count }} items
+                        {{ $category->menu_items_count }} menu · {{ $category->inventory_items_count }} stock
                     </span>
                 </div>
                 <h3 class="text-base font-bold text-slate-900">{{ $category->name }}</h3>
@@ -33,15 +33,20 @@
             </div>
 
             <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                @if($category->menu_items_count > 0 && auth()->user()->isAdmin())
+                <a href="{{ route('menu.index', ['category' => $category->id]) }}" class="text-xs font-semibold text-orange-600 hover:text-orange-700">
+                    View Menu &rarr;
+                </a>
+                @endif
                 <a href="{{ route('inventory.index', ['category' => $category->id]) }}" class="text-xs font-semibold text-emerald-600 hover:text-emerald-700">
-                    View Items &rarr;
+                    View Stock &rarr;
                 </a>
                 <div class="flex items-center gap-2">
                     <button type="button" class="btn-edit-cat text-xs text-slate-500 hover:text-slate-800 font-semibold"
                             data-id="{{ $category->id }}" data-name="{{ $category->name }}" data-desc="{{ $category->description }}" data-active="{{ $category->is_active ? 1 : 0 }}">
                         Edit
                     </button>
-                    @if($category->inventory_items_count == 0)
+                    @if($category->menu_items_count == 0 && $category->inventory_items_count == 0)
                     <form action="{{ route('categories.destroy', $category->id) }}" method="POST" onsubmit="return confirm('Delete this category?')">
                         @csrf
                         @method('DELETE')

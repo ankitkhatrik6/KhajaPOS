@@ -36,38 +36,20 @@
         <div class="flex-1 overflow-y-auto p-3 sm:p-4">
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 xl:grid-cols-4 gap-3" id="products-grid">
                 @foreach($items as $item)
-                @php
-                    $isOut = $item->isOutOfStock();
-                    $isLow = $item->isLowStock();
-                @endphp
-                <div class="product-card bg-white rounded-xl border border-slate-200 p-3 hover:border-emerald-400 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer select-none group {{ $isOut ? 'opacity-60 bg-slate-50 cursor-not-allowed' : '' }}"
+                <div class="product-card bg-white rounded-xl border border-slate-200 p-3 hover:border-emerald-400 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer select-none group"
                      data-id="{{ $item->id }}"
                      data-name="{{ $item->name }}"
-                     data-price="{{ (float)$item->selling_price }}"
-                     data-cost="{{ (float)$item->purchase_price }}"
-                     data-stock="{{ (float)$item->current_quantity }}"
+                     data-price="{{ (float)$item->price }}"
+                     data-cost="{{ (float)$item->cost }}"
                      data-unit="{{ $item->unit }}"
                      data-category="{{ $item->category_id }}"
                      data-sku="{{ $item->sku }}">
                     <div>
-                        <!-- Header with Category & Stock Status -->
+                        <!-- Header with Category -->
                         <div class="flex items-center justify-between gap-1 mb-1.5">
                             <span class="text-[10px] font-semibold text-slate-400 uppercase truncate">
-                                {{ $item->category->name ?? 'Item' }}
+                                {{ $item->category->name ?? 'Menu' }}
                             </span>
-                            @if($isOut)
-                                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-100 text-rose-800">
-                                    Out of Stock
-                                </span>
-                            @elseif($isLow)
-                                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800">
-                                    Low: {{ $item->current_quantity }} {{ $item->unit }}
-                                </span>
-                            @else
-                                <span class="px-1.5 py-0.5 rounded text-[9px] font-medium bg-emerald-50 text-emerald-700">
-                                    {{ $item->current_quantity }} {{ $item->unit }}
-                                </span>
-                            @endif
                         </div>
 
                         <!-- Item Name -->
@@ -80,15 +62,12 @@
                     <!-- Bottom Price & Add Action -->
                     <div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
                         <span class="text-sm font-extrabold text-slate-900 font-mono">
-                            {{ format_npr($item->selling_price) }}
+                            {{ format_npr($item->price) }}
                         </span>
-                        @if(!$isOut)
+                        <span class="text-[10px] text-slate-400">{{ $item->category->name ?? '' }}</span>
                         <button type="button" class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white flex items-center justify-center transition">
                             <i data-lucide="plus" class="w-4 h-4"></i>
                         </button>
-                        @else
-                        <span class="text-xs text-rose-500 font-medium">Sold Out</span>
-                        @endif
                     </div>
                 </div>
                 @endforeach
@@ -295,20 +274,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const name = this.dataset.name;
             const price = parseFloat(this.dataset.price);
             const cost = parseFloat(this.dataset.cost);
-            const stock = parseFloat(this.dataset.stock);
             const unit = this.dataset.unit;
-
-            if (stock <= 0) {
-                alert(`Sorry, "${name}" is currently out of stock.`);
-                return;
-            }
 
             const existingIndex = cart.findIndex(item => item.id === id);
             if (existingIndex > -1) {
-                if (cart[existingIndex].quantity + 1 > stock) {
-                    alert(`Cannot add more "${name}". Only ${stock} ${unit} available in stock.`);
-                    return;
-                }
                 cart[existingIndex].quantity += 1;
             } else {
                 cart.push({
@@ -316,7 +285,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     name: name,
                     price: price,
                     cost: cost,
-                    stock: stock,
                     unit: unit,
                     quantity: 1
                 });
@@ -386,10 +354,6 @@ document.addEventListener('DOMContentLoaded', function() {
             b.addEventListener('click', function(e) {
                 e.stopPropagation();
                 const idx = parseInt(this.dataset.index);
-                if (cart[idx].quantity + 1 > cart[idx].stock) {
-                    alert(`Maximum available stock reached (${cart[idx].stock} ${cart[idx].unit}).`);
-                    return;
-                }
                 cart[idx].quantity += 1;
                 renderCart();
             });

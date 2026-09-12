@@ -23,19 +23,19 @@ class InvoiceController extends Controller
 
     public function show(Invoice $invoice)
     {
-        $invoice->load(['sale.items.inventoryItem', 'sale.user', 'payments']);
+        $invoice->load(['sale.items.menuItem', 'sale.user', 'payments']);
         return view('invoices.show', compact('invoice'));
     }
 
     public function print(Invoice $invoice)
     {
-        $invoice->load(['sale.items.inventoryItem', 'sale.user', 'payments']);
+        $invoice->load(['sale.items.menuItem', 'sale.user', 'payments']);
         return view('invoices.print', compact('invoice'));
     }
 
     public function receipt(Invoice $invoice)
     {
-        $invoice->load(['sale.items.inventoryItem', 'sale.user', 'payments']);
+        $invoice->load(['sale.items.menuItem', 'sale.user', 'payments']);
         return view('invoices.receipt', compact('invoice'));
     }
 }

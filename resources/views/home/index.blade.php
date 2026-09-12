@@ -65,7 +65,7 @@
             </h1>
             <p class="mt-5 text-base sm:text-lg text-slate-600 leading-relaxed">
                 A complete Point-of-Sale, inventory and invoicing system for restaurants and cafes —
-                faster checkout with digital or cash payments, live stock deduction, and
+                faster checkout with digital or cash payments, raw-material stock tracking, and
                 printable VAT receipts for your customers.
             </p>
             <div class="mt-8 flex flex-col sm:flex-row gap-3">
@@ -117,7 +117,7 @@
                 </div>
                 <div class="mt-5 pt-4 border-t border-slate-100 flex items-center gap-2 text-xs text-slate-500">
                     <i data-lucide="circle-check-big" class="w-4 h-4 text-emerald-600 flex-shrink-0"></i>
-                    Real-time stock deduction · VAT receipts · Multi-role staff access
+                    Real-time raw-material stock · VAT receipts · Integrated menu & billing
                 </div>
             </div>
         </div>
@@ -137,8 +137,8 @@
             </div>
             <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
                 <div class="w-11 h-11 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center"><i data-lucide="package" class="w-6 h-6"></i></div>
-                <h3 class="mt-4 font-bold text-slate-900">Live Stock &amp; Inventory</h3>
-                <p class="mt-2 text-sm text-slate-500">Stock is deducted automatically with every sale, with low-stock alerts, restock logs, adjustments and damage tracking.</p>
+                <h3 class="mt-4 font-bold text-slate-900">Raw Material Stock &amp; Inventory</h3>
+                <p class="mt-2 text-sm text-slate-500">Track raw materials and supplies with low-stock alerts, restock logs, adjustments and damage tracking — dishes on the menu are billed without stock.</p>
             </div>
             <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
                 <div class="w-11 h-11 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center"><i data-lucide="file-text" class="w-6 h-6"></i></div>
@@ -148,48 +148,24 @@
         </div>
     </section>
 
-    <!-- Try it out -->
+    <!-- Get started -->
     <section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14 lg:py-16">
         <div class="bg-white rounded-3xl border border-slate-200 shadow-sm px-6 py-10 lg:px-10 text-center">
-            <h2 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">Try it right now</h2>
-            <p class="mt-3 text-slate-600">One-click demo access to a pre-loaded restaurant — no signup needed.</p>
-            <div class="mt-8 grid gap-4 sm:grid-cols-3">
-                @if(!auth()->check())
-                <form action="{{ route('login.quick', 'admin') }}" method="POST">
-                    @csrf
-                    <button type="submit" class="w-full py-5 rounded-2xl border-2 border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50 transition text-left">
-                        <span class="block text-base font-bold text-slate-800">Admin</span>
-                        <span class="block text-xs text-slate-500 mt-0.5">Full access · settings &amp; staff</span>
-                        <span class="block text-[11px] font-semibold text-indigo-600 mt-2">Sign in as Admin →</span>
-                    </button>
-                </form>
-                <form action="{{ route('login.quick', 'cashier') }}" method="POST">
-                    @csrf
-                    <button type="submit" class="w-full py-5 rounded-2xl border-2 border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50 transition text-left">
-                        <span class="block text-base font-bold text-slate-800">Cashier</span>
-                        <span class="block text-xs text-slate-500 mt-0.5">POS billing &amp; sales</span>
-                        <span class="block text-[11px] font-semibold text-emerald-600 mt-2">Sign in as Cashier →</span>
-                    </button>
-                </form>
-                <form action="{{ route('login.quick', 'stock') }}" method="POST">
-                    @csrf
-                    <button type="submit" class="w-full py-5 rounded-2xl border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50 transition text-left">
-                        <span class="block text-base font-bold text-slate-800">Stock Manager</span>
-                        <span class="block text-xs text-slate-500 mt-0.5">Inventory &amp; stock control</span>
-                        <span class="block text-[11px] font-semibold text-amber-600 mt-2">Sign in as Stock Mgr →</span>
-                    </button>
-                </form>
+            <h2 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">Ready to run your counter?</h2>
+            <p class="mt-3 text-slate-600">Sign in to manage your menu, raw-material stock, billing, invoices and reports.</p>
+            <div class="mt-8 flex justify-center gap-3">
+                @if(auth()->check())
+                <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-md transition">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span>Open Dashboard</span>
+                </a>
                 @else
-                <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 flex items-center gap-3 text-left">
-                    <i data-lucide="circle-check-big" class="w-10 h-10 text-emerald-600 flex-shrink-0"></i>
-                    <div>
-                        <h3 class="font-bold text-emerald-800">You're signed in</h3>
-                        <p class="text-sm text-emerald-700 mt-1">Head over to your dashboard to start working.</p>
-                    </div>
-                </div>
+                <a href="{{ route('login') }}" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-md transition">
+                    <i data-lucide="log-in" class="w-5 h-5"></i>
+                    <span>Staff Login</span>
+                </a>
                 @endif
             </div>
-            <p class="mt-6 text-xs text-slate-400">Demo password for all accounts: <code class="font-mono font-semibold text-slate-600">password</code></p>
         </div>
     </section>
 

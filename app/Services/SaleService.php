@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\Invoice;
 use App\Models\Payment;
-use App\Models\RestaurantSetting;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\User;
@@ -14,16 +13,13 @@ use Illuminate\Support\Str;
 
 class SaleService
 {
-    protected StockService $stockService;
     protected PosService $posService;
     protected InvoiceService $invoiceService;
 
     public function __construct(
-        StockService $stockService,
         PosService $posService,
         InvoiceService $invoiceService
     ) {
-        $this->stockService = $stockService;
         $this->posService = $posService;
         $this->invoiceService = $invoiceService;
     }
@@ -74,21 +70,12 @@ class SaleService
     protected function completeSale(array $calc, string $customerName, string $paymentMethod, ?string $notes, ?string $transactionRef, User $cashier): Sale
     {
         return DB::transaction(function () use ($calc, $customerName, $paymentMethod, $notes, $transactionRef, $cashier) {
-            // 1. First Pass: Verify stock availability for ALL items
-            foreach ($calc['items'] as $itemRow) {
-                $item = $itemRow['item'];
-                $requestedQty = (float)$itemRow['quantity'];
-                if ((float)$item->current_quantity < $requestedQty) {
-                    throw new Exception("Stock not sufficient for '{$item->name}'. Available: {$item->current_quantity} {$item->unit}, Requested: {$requestedQty} {$item->unit}");
-                }
-            }
-
-            // 2. Generate a unique sale number e.g. SALE-20260911-0006 (based on
+            // 1. Generate a unique sale number e.g. SALE-20260911-0006 (based on
             //    the highest number already used for today, not a simple row count —
             //    counts break when numbers are non-contiguous or rows get deleted)
             $saleNumber = $this->generateSaleNumber();
 
-            // 3. Create Sale record
+            // 2. Create Sale record
             $sale = Sale::create([
                 'sale_number' => $saleNumber,
                 'user_id' => $cashier->id,
@@ -104,38 +91,27 @@ class SaleService
                 'notes' => $notes,
             ]);
 
-            // 4. Create Sale Items and Deduct Stock
+            // 3. Create Sale Items (menu items are not stock-tracked, so no
+            //    inventory deduction happens when a dish is sold)
             foreach ($calc['items'] as $itemRow) {
-                $item = $itemRow['item'];
-                $qty = (float)$itemRow['quantity'];
-
                 SaleItem::create([
                     'sale_id' => $sale->id,
-                    'inventory_item_id' => $item->id,
+                    'menu_item_id' => $itemRow['item']->id,
                     'item_name' => $itemRow['item_name'],
                     'unit' => $itemRow['unit'],
-                    'quantity' => $qty,
+                    'quantity' => $itemRow['quantity'],
                     'unit_price' => $itemRow['unit_price'],
                     'unit_cost' => $itemRow['unit_cost'],
                     'subtotal' => $itemRow['subtotal'],
                     'total_cost' => $itemRow['total_cost'],
                     'profit' => $itemRow['profit'],
                 ]);
-
-                // Deduct stock and log transaction
-                $this->stockService->deductStock(
-                    $item,
-                    $qty,
-                    "Sale #{$saleNumber}",
-                    $saleNumber,
-                    $cashier->id
-                );
             }
 
-            // 5. Generate Invoice
+            // 4. Generate Invoice
             $invoice = $this->invoiceService->createInvoiceForSale($sale, $cashier);
 
-            // 6. Record Payment
+            // 5. Record Payment
             Payment::create([
                 'sale_id' => $sale->id,
                 'invoice_id' => $invoice->id,
@@ -146,7 +122,7 @@ class SaleService
                 'user_id' => $cashier->id,
             ]);
 
-            return $sale->load(['items.inventoryItem', 'invoice', 'payments', 'user']);
+            return $sale->load(['items.menuItem', 'invoice', 'payments', 'user']);
         });
     }
 

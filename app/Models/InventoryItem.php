@@ -41,11 +41,6 @@ class InventoryItem extends Model
         return $this->hasMany(InventoryTransaction::class)->latest();
     }
 
-    public function saleItems(): HasMany
-    {
-        return $this->hasMany(SaleItem::class);
-    }
-
     public function isLowStock(): bool
     {
         return $this->current_quantity <= $this->minimum_stock && $this->current_quantity > 0;

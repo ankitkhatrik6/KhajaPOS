@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\InventoryItem;
+use App\Models\MenuItem;
 use App\Models\RestaurantSetting;
 
 class PosService
@@ -25,13 +25,13 @@ class PosService
                 continue;
             }
 
-            $item = InventoryItem::find($itemId);
+            $item = MenuItem::find($itemId);
             if (!$item) {
                 continue;
             }
 
-            $unitPrice = (float)$item->selling_price;
-            $unitCost = (float)$item->purchase_price;
+            $unitPrice = (float)$item->price;
+            $unitCost = (float)$item->cost;
             $lineSubtotal = round($unitPrice * $qty, 2);
             $lineCost = round($unitCost * $qty, 2);
             $lineProfit = round($lineSubtotal - $lineCost, 2);
@@ -41,7 +41,7 @@ class PosService
 
             $processedItems[] = [
                 'item' => $item,
-                'inventory_item_id' => $item->id,
+                'menu_item_id' => $item->id,
                 'item_name' => $item->name,
                 'unit' => $item->unit,
                 'quantity' => $qty,

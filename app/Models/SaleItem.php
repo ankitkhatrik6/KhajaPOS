@@ -9,7 +9,7 @@ class SaleItem extends Model
 {
     protected $fillable = [
         'sale_id',
-        'inventory_item_id',
+        'menu_item_id',
         'item_name',
         'unit',
         'quantity',
@@ -37,8 +37,8 @@ class SaleItem extends Model
         return $this->belongsTo(Sale::class);
     }
 
-    public function inventoryItem(): BelongsTo
+    public function menuItem(): BelongsTo
     {
-        return $this->belongsTo(InventoryItem::class);
+        return $this->belongsTo(MenuItem::class);
     }
 }

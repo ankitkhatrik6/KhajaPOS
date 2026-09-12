@@ -10,7 +10,7 @@ class CategoryController extends Controller
 {
     public function index()
     {
-        $categories = Category::withCount('inventoryItems')->orderBy('name')->get();
+        $categories = Category::withCount(['menuItems', 'inventoryItems'])->orderBy('name')->get();
         return view('categories.index', compact('categories'));
     }
 
@@ -44,8 +44,8 @@ class CategoryController extends Controller
 
     public function destroy(Category $category)
     {
-        if ($category->inventoryItems()->count() > 0) {
-            return back()->with('error', "Cannot delete category '{$category->name}' because items belong to it.");
+        if ($category->menuItems()->count() > 0 || $category->inventoryItems()->count() > 0) {
+            return back()->with('error', "Cannot delete category '{$category->name}' because menu items or raw materials belong to it.");
         }
 
         $category->delete();

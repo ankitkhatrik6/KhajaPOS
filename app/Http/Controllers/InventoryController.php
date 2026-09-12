@@ -208,8 +208,8 @@ class InventoryController extends Controller
 
     public function destroy(InventoryItem $item)
     {
-        if ($item->saleItems()->count() > 0) {
-            return back()->with('error', "Cannot delete '{$item->name}' because historical sales exist. You can set its status to 'Inactive' instead.");
+        if ($item->transactions()->count() > 0) {
+            return back()->with('error', "Cannot delete '{$item->name}' because stock history exists. You can set its status to 'Inactive' instead.");
         }
 
         $item->delete();
