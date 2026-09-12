@@ -6,8 +6,8 @@
 <div class="max-w-3xl mx-auto space-y-6">
     <div class="flex items-center justify-between">
         <div>
-            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Add New Inventory Item</h1>
-            <p class="text-sm text-slate-500">Create a new restaurant menu item, beverage, or raw kitchen material.</p>
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Add Raw Material / Supply</h1>
+            <p class="text-sm text-slate-500">Add a raw material or item used in the restaurant — kitchen ingredient, packaging, or supply. Dishes and menu items are added under Menu Management.</p>
         </div>
         <a href="{{ route('inventory.index') }}" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">
             <i data-lucide="arrow-left" class="w-4 h-4"></i>
@@ -21,8 +21,8 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="sm:col-span-2">
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Item Name *</label>
-                    <input type="text" name="name" value="{{ old('name') }}" required placeholder="e.g. Buff Steamed Momo"
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Material Name *</label>
+                    <input type="text" name="name" value="{{ old('name') }}" required placeholder="e.g. Basmati Rice (25kg), Cooking Oil, Parcel Box"
                            class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
                 </div>
 
@@ -68,9 +68,10 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Selling Price (NPR) *</label>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Selling / Retail Price (NPR) *</label>
                     <input type="number" step="0.01" min="0" name="selling_price" value="{{ old('selling_price', '0.00') }}" required placeholder="0.00"
                            class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm font-mono font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500">
+                    <span class="text-[10px] text-slate-400">Only for items sold directly (e.g. bottled water); used for stock valuation.</span>
                 </div>
 
                 <div>
@@ -88,7 +89,7 @@
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Item Status</label>
                     <select name="status" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500">
-                        <option value="active" {{ old('status') == 'active' ? 'selected' : '' }}>Active (Available in POS)</option>
+                        <option value="active" {{ old('status') == 'active' ? 'selected' : '' }}>Active (In Use)</option>
                         <option value="inactive" {{ old('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
                     </select>
                 </div>

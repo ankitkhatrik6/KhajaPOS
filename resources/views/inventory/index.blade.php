@@ -7,8 +7,8 @@
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Inventory & Stock Control</h1>
-            <p class="text-sm text-slate-500">Monitor stock levels, restock inventory, record kitchen wastage, and audit balances.</p>
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Raw Materials & Supplies</h1>
+            <p class="text-sm text-slate-500">Track raw materials and items used in the restaurant — kitchen ingredients, drinks stock, packaging and supplies. Menu items are managed separately and are not stock tracked.</p>
         </div>
         <div class="flex items-center gap-2">
             <a href="{{ route('inventory.transactions') }}" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 transition">
@@ -17,7 +17,7 @@
             </a>
             <a href="{{ route('inventory.create') }}" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition">
                 <i data-lucide="plus" class="w-4 h-4"></i>
-                <span>Add New Item</span>
+                <span>Add Raw Material</span>
             </a>
         </div>
     </div>
@@ -76,7 +76,7 @@
                         <th class="py-3 px-4">Item Details</th>
                         <th class="py-3 px-4">Category</th>
                         <th class="py-3 px-4 text-right">Cost (NPR)</th>
-                        <th class="py-3 px-4 text-right">Selling (NPR)</th>
+                        <th class="py-3 px-4 text-right">Selling / Retail (NPR)</th>
                         <th class="py-3 px-4 text-right">Available Stock</th>
                         <th class="py-3 px-4 text-right">Min Level</th>
                         <th class="py-3 px-4 text-center">Status</th>

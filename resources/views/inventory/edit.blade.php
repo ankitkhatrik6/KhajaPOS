@@ -6,8 +6,8 @@
 <div class="max-w-3xl mx-auto space-y-6">
     <div class="flex items-center justify-between">
         <div>
-            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Edit Item: {{ $item->name }}</h1>
-            <p class="text-sm text-slate-500">Update item pricing, category, minimum alert threshold, or status.</p>
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Edit Raw Material: {{ $item->name }}</h1>
+            <p class="text-sm text-slate-500">Update pricing, supplier, minimum alert threshold, or status. Menu items are managed under Menu Management.</p>
         </div>
         <a href="{{ route('inventory.index') }}" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">
             <i data-lucide="arrow-left" class="w-4 h-4"></i>
@@ -22,7 +22,7 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="sm:col-span-2">
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Item Name *</label>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Material Name *</label>
                     <input type="text" name="name" value="{{ old('name', $item->name) }}" required
                            class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500">
                 </div>
@@ -64,7 +64,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Selling Price (NPR) *</label>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Selling / Retail Price (NPR) *</label>
                     <input type="number" step="0.01" min="0" name="selling_price" value="{{ old('selling_price', $item->selling_price) }}" required
                            class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm font-mono font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500">
                 </div>
@@ -97,7 +97,7 @@
                     @method('DELETE')
                     <button type="submit" class="text-xs text-rose-600 hover:text-rose-800 font-semibold flex items-center gap-1">
                         <i data-lucide="trash" class="w-4 h-4"></i>
-                        <span>Delete Item</span>
+                        <span>Delete Material</span>
                     </button>
                 </form>
 

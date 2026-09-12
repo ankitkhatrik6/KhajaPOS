@@ -37,6 +37,11 @@ class Category extends Model
         return $this->hasMany(InventoryItem::class);
     }
 
+    public function menuItems(): HasMany
+    {
+        return $this->hasMany(MenuItem::class);
+    }
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);

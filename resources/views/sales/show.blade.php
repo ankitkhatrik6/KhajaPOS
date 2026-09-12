@@ -101,7 +101,7 @@
         <!-- Financial Summary -->
         <div class="p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4">
             <div class="text-xs text-slate-500 space-y-1">
-                <div>Total Cost of Ingredients: <span class="font-mono font-bold text-slate-700">{{ format_npr($sale->cost) }}</span></div>
+                <div>Total Estimated Food Cost: <span class="font-mono font-bold text-slate-700">{{ format_npr($sale->cost) }}</span></div>
                 <div>Net Margin on this order: <span class="font-mono font-bold text-emerald-600">{{ format_npr($sale->profit) }}</span></div>
             </div>
 

@@ -22,7 +22,7 @@
                 <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Transaction Type</label>
                 <select name="type" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-1 focus:ring-emerald-500">
                     <option value="">All Types</option>
-                    <option value="Sale" {{ request('type') === 'Sale' ? 'selected' : '' }}>Sale (POS Deduction)</option>
+                    <option value="Sale" {{ request('type') === 'Sale' ? 'selected' : '' }}>Sale (Historical Record)</option>
                     <option value="Purchase" {{ request('type') === 'Purchase' ? 'selected' : '' }}>Purchase (Restock)</option>
                     <option value="Adjustment" {{ request('type') === 'Adjustment' ? 'selected' : '' }}>Adjustment (Reconciliation)</option>
                     <option value="Damage" {{ request('type') === 'Damage' ? 'selected' : '' }}>Damage / Wastage</option>
