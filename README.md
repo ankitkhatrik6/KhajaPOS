@@ -24,8 +24,8 @@ The system runs entirely on MySQL or MariaDB and is served by PHP, which makes i
 
 - Point of Sale terminal with instant item search and category filters
 - Cash and online payment methods with change calculation for cash notes
-- Automatic inventory deduction on every completed sale
-- Low stock alerts and stock history, including restock, adjustment and damage logs
+- Separate menu and raw-material inventory — dishes are billed with quantity only and are not stock tracked
+- Raw material stock management with automatic low stock alerts and history, including restock, adjustment and damage logs
 - Category and menu management for food, drinks, snacks and desserts
 - VAT-compliant tax invoice generation in printable A4 and 80mm thermal receipt formats
 - Sales, payment method and profit reporting in NPR
@@ -96,13 +96,11 @@ The system runs entirely on MySQL or MariaDB and is served by PHP, which makes i
 
 ## Default Accounts
 
-The database seeder creates three demo accounts. Every account uses the password `password`.
+The database seeder creates a single administrator account (roles for Cashier and Stock Manager can be assigned to additional staff from Settings → Staff & Roles):
 
-| Role          | Email                   | Access                          |
-| ------------- | ----------------------- | ------------------------------- |
-| Admin         | admin@restaurant.com    | Full system access              |
-| Cashier       | cashier@restaurant.com  | POS billing and sales          |
-| Stock Manager | stock@restaurant.com    | Inventory and stock control    |
+| Role  | Email              | Password      | Access             |
+| ----- | ------------------ | ------------- | ------------------ |
+| Admin | admin@khajapos.com | KhajaPOS@123  | Full system access |
 
 ## Payments
 
