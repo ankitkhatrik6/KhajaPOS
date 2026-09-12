@@ -37,9 +37,9 @@
                 @csrf
                 <div>
                     <label for="email" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Email Address</label>
-                    <input type="email" id="email" name="email" value="{{ old('email', 'admin@restaurant.com') }}" required 
+                    <input type="email" id="email" name="email" value="{{ old('email') }}" required 
                            class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 @error('email') border-rose-500 @enderror"
-                           placeholder="staff@restaurant.com">
+                           placeholder="you@restaurant.com" autocomplete="username">
                     @error('email')
                         <p class="text-xs text-rose-600 mt-1">{{ $message }}</p>
                     @enderror
@@ -47,9 +47,9 @@
 
                 <div>
                     <label for="password" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Password</label>
-                    <input type="password" id="password" name="password" value="password" required 
+                    <input type="password" id="password" name="password" value="" required 
                            class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                           placeholder="••••••••">
+                           placeholder="Enter your password" autocomplete="current-password">
                 </div>
 
                 <div class="flex items-center justify-between">
@@ -65,40 +65,10 @@
                     <span>Sign In to Terminal</span>
                 </button>
             </form>
-
-            <!-- 1-Click Quick Demo Logins -->
-            <div class="pt-4 border-t border-slate-200">
-                <p class="text-center text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">1-Click Demo Login</p>
-                <div class="grid grid-cols-3 gap-2">
-                    <form action="{{ route('login.quick', 'admin') }}" method="POST">
-                        @csrf
-                        <button type="submit" class="w-full py-2 px-2 border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50 rounded-lg text-center transition group">
-                            <span class="block text-xs font-bold text-slate-700 group-hover:text-indigo-600">Admin</span>
-                            <span class="block text-[10px] text-slate-400">Full Access</span>
-                        </button>
-                    </form>
-
-                    <form action="{{ route('login.quick', 'cashier') }}" method="POST">
-                        @csrf
-                        <button type="submit" class="w-full py-2 px-2 border border-slate-200 hover:border-emerald-400 hover:bg-emerald-50/50 rounded-lg text-center transition group">
-                            <span class="block text-xs font-bold text-slate-700 group-hover:text-emerald-600">Cashier</span>
-                            <span class="block text-[10px] text-slate-400">POS & Sales</span>
-                        </button>
-                    </form>
-
-                    <form action="{{ route('login.quick', 'stock') }}" method="POST">
-                        @csrf
-                        <button type="submit" class="w-full py-2 px-2 border border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 rounded-lg text-center transition group">
-                            <span class="block text-xs font-bold text-slate-700 group-hover:text-amber-600">Stock Mgr</span>
-                            <span class="block text-[10px] text-slate-400">Inventory</span>
-                        </button>
-                    </form>
-                </div>
-            </div>
         </div>
 
         <div class="px-6 py-3 bg-slate-50 border-t border-slate-100 text-center text-xs text-slate-500">
-            Default password for all demo accounts: <code class="font-mono font-semibold text-slate-700">password</code>
+            Authorized staff only. Contact your administrator if you need access.
         </div>
     </div>
 

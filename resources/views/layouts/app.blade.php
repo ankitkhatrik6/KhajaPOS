@@ -78,7 +78,7 @@
                         </span>
                     </div>
 
-                    <!-- Role Switcher for Testing -->
+                    <!-- User Menu -->
                     <div class="relative inline-block text-left" id="role-switcher-dropdown">
                         <button type="button" id="role-dropdown-btn" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition shadow-sm">
                             <span class="w-2 h-2 rounded-full {{ auth()->user()->isAdmin() ? 'bg-indigo-500' : (auth()->user()->isCashier() ? 'bg-emerald-500' : 'bg-amber-500') }}"></span>
@@ -91,30 +91,6 @@
                                 <p class="text-xs font-semibold text-slate-800">{{ auth()->user()->name }}</p>
                                 <p class="text-xs text-slate-500 truncate">{{ auth()->user()->email }}</p>
                             </div>
-                            <div class="px-3 py-1 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                                Switch User Role
-                            </div>
-                            <form action="{{ route('login.quick', 'admin') }}" method="POST">
-                                @csrf
-                                <button type="submit" class="w-full text-left px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-100 flex items-center justify-between">
-                                    <span>Suman Shrestha</span>
-                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-50 text-indigo-700">Admin</span>
-                                </button>
-                            </form>
-                            <form action="{{ route('login.quick', 'cashier') }}" method="POST">
-                                @csrf
-                                <button type="submit" class="w-full text-left px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-100 flex items-center justify-between">
-                                    <span>Pooja Thapa</span>
-                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700">Cashier</span>
-                                </button>
-                            </form>
-                            <form action="{{ route('login.quick', 'stock') }}" method="POST">
-                                @csrf
-                                <button type="submit" class="w-full text-left px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-100 flex items-center justify-between">
-                                    <span>Bikash Gurung</span>
-                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-700">Stock Mgr</span>
-                                </button>
-                            </form>
                             <div class="border-t border-slate-100 mt-1 pt-1">
                                 <form action="{{ route('logout') }}" method="POST">
                                     @csrf
@@ -145,6 +121,13 @@
                         <i data-lucide="shopping-cart" class="w-5 h-5"></i>
                         <span>POS Billing Terminal</span>
                     </a>
+
+                    @if(auth()->user()->isAdmin())
+                    <a href="{{ route('menu.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition {{ request()->routeIs('menu.*') ? 'bg-emerald-50 text-emerald-800 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}">
+                        <i data-lucide="utensils" class="w-5 h-5 text-orange-500"></i>
+                        <span>Menu Management</span>
+                    </a>
+                    @endif
 
                     <div class="pt-3 pb-1">
                         <p class="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Stock & Inventory</p>
@@ -293,6 +276,12 @@
                         <i data-lucide="shopping-cart" class="w-5 h-5"></i>
                         <span>POS Billing</span>
                     </a>
+                    @if(auth()->user()->isAdmin())
+                    <a href="{{ route('menu.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-100">
+                        <i data-lucide="utensils" class="w-5 h-5 text-orange-500"></i>
+                        <span>Menu Management</span>
+                    </a>
+                    @endif
                     <a href="{{ route('inventory.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-100">
                         <i data-lucide="package" class="w-5 h-5 text-amber-500"></i>
                         <span>Inventory</span>

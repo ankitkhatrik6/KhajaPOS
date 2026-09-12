@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -37,25 +36,6 @@ class AuthController extends Controller
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records.',
         ])->onlyInput('email');
-    }
-
-    public function quickLogin(string $role)
-    {
-        $email = match ($role) {
-            'admin' => 'admin@restaurant.com',
-            'cashier' => 'cashier@restaurant.com',
-            'stock' => 'stock@restaurant.com',
-            default => 'admin@restaurant.com',
-        };
-
-        $user = User::where('email', $email)->first();
-        if ($user) {
-            Auth::login($user);
-            request()->session()->regenerate();
-            return redirect()->route('dashboard')->with('success', "Logged in as {$user->name} ({$user->role->name})");
-        }
-
-        return redirect()->route('login')->with('error', 'User not found.');
     }
 
     public function logout(Request $request)
