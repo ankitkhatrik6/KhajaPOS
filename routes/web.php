@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\MenuItemController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SaleController;
@@ -19,7 +20,6 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 // Authentication Routes
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
-Route::post('/login/quick/{role}', [AuthController::class, 'quickLogin'])->name('login.quick');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Authenticated Routes
@@ -62,6 +62,17 @@ Route::middleware('auth')->group(function () {
         Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
 
         Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    });
+
+    // Menu Management (Admin only - menu items are not stock tracked)
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/menu', [MenuItemController::class, 'index'])->name('menu.index');
+        Route::get('/menu/create', [MenuItemController::class, 'create'])->name('menu.create');
+        Route::post('/menu', [MenuItemController::class, 'store'])->name('menu.store');
+        Route::get('/menu/{item}/edit', [MenuItemController::class, 'edit'])->name('menu.edit');
+        Route::put('/menu/{item}', [MenuItemController::class, 'update'])->name('menu.update');
+        Route::post('/menu/{item}/toggle', [MenuItemController::class, 'toggle'])->name('menu.toggle');
+        Route::delete('/menu/{item}', [MenuItemController::class, 'destroy'])->name('menu.destroy');
     });
 
     // Administration Only (Admin)
