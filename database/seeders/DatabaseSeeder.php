@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\InventoryItem;
 use App\Models\InventoryTransaction;
 use App\Models\Invoice;
+use App\Models\MenuItem;
 use App\Models\Payment;
 use App\Models\RestaurantSetting;
 use App\Models\Role;
@@ -40,31 +41,13 @@ class DatabaseSeeder extends Seeder
             'description' => 'Inventory and Stock Controller managing restocks, damages, and stock audits.',
         ]);
 
-        // 2. Users
+        // 2. Users — single administrator account
         $adminUser = User::create([
-            'name' => 'Suman Shrestha (Admin)',
-            'email' => 'admin@restaurant.com',
+            'name' => 'Administrator',
+            'email' => 'admin@khajapos.com',
             'phone' => '+977-9841234567',
-            'password' => Hash::make('password'),
+            'password' => Hash::make('KhajaPOS@123'),
             'role_id' => $adminRole->id,
-            'is_active' => true,
-        ]);
-
-        $cashierUser = User::create([
-            'name' => 'Pooja Thapa (Cashier)',
-            'email' => 'cashier@restaurant.com',
-            'phone' => '+977-9812345678',
-            'password' => Hash::make('password'),
-            'role_id' => $cashierRole->id,
-            'is_active' => true,
-        ]);
-
-        $stockUser = User::create([
-            'name' => 'Bikash Gurung (Stock Mgr)',
-            'email' => 'stock@restaurant.com',
-            'phone' => '+977-9801234569',
-            'password' => Hash::make('password'),
-            'role_id' => $stockRole->id,
             'is_active' => true,
         ]);
 
@@ -101,331 +84,65 @@ class DatabaseSeeder extends Seeder
             $categories[$cat['slug']] = Category::create($cat);
         }
 
-        // 5. Inventory Items
-        $itemsData = [
+        // 5. Menu Items (dishes & beverages sold at the counter - NOT stock tracked)
+        $menuItemsData = [
             // Food
-            [
-                'category_slug' => 'food',
-                'name' => 'Buff Steamed Momo',
-                'sku' => 'MMO-BUF-STM',
-                'unit' => 'Piece',
-                'purchase_price' => 110.00,
-                'selling_price' => 220.00,
-                'current_quantity' => 45.00,
-                'minimum_stock' => 10.00,
-                'supplier' => 'Kathmandu Fresh Meats',
-            ],
-            [
-                'category_slug' => 'food',
-                'name' => 'Chicken Jhol Momo',
-                'sku' => 'MMO-CHK-JHL',
-                'unit' => 'Piece',
-                'purchase_price' => 140.00,
-                'selling_price' => 280.00,
-                'current_quantity' => 30.00,
-                'minimum_stock' => 8.00,
-                'supplier' => 'Valley Poultry Suppliers',
-            ],
-            [
-                'category_slug' => 'food',
-                'name' => 'Veg Fried Momo',
-                'sku' => 'MMO-VEG-FRD',
-                'unit' => 'Piece',
-                'purchase_price' => 80.00,
-                'selling_price' => 180.00,
-                'current_quantity' => 25.00,
-                'minimum_stock' => 10.00,
-                'supplier' => 'Balkhu Fresh Produce',
-            ],
-            [
-                'category_slug' => 'food',
-                'name' => 'Chicken Chowmein',
-                'sku' => 'CHW-CHK-01',
-                'unit' => 'Piece',
-                'purchase_price' => 120.00,
-                'selling_price' => 240.00,
-                'current_quantity' => 20.00,
-                'minimum_stock' => 5.00,
-                'supplier' => 'National Noodles Industry',
-            ],
-            [
-                'category_slug' => 'food',
-                'name' => 'Veg Chowmein',
-                'sku' => 'CHW-VEG-01',
-                'unit' => 'Piece',
-                'purchase_price' => 80.00,
-                'selling_price' => 170.00,
-                'current_quantity' => 18.00,
-                'minimum_stock' => 5.00,
-                'supplier' => 'National Noodles Industry',
-            ],
-            [
-                'category_slug' => 'food',
-                'name' => 'Chicken Thukpa',
-                'sku' => 'TKP-CHK-01',
-                'unit' => 'Piece',
-                'purchase_price' => 130.00,
-                'selling_price' => 260.00,
-                'current_quantity' => 15.00,
-                'minimum_stock' => 5.00,
-                'supplier' => 'National Noodles Industry',
-            ],
-            [
-                'category_slug' => 'food',
-                'name' => 'Nepali Thakali Dal Bhat Set (Chicken)',
-                'sku' => 'DBT-CHK-01',
-                'unit' => 'Piece',
-                'purchase_price' => 240.00,
-                'selling_price' => 480.00,
-                'current_quantity' => 35.00,
-                'minimum_stock' => 10.00,
-                'supplier' => 'Mustang Thakali Organic Supplies',
-            ],
-            [
-                'category_slug' => 'food',
-                'name' => 'Nepali Thakali Dal Bhat Set (Veg)',
-                'sku' => 'DBT-VEG-01',
-                'unit' => 'Piece',
-                'purchase_price' => 160.00,
-                'selling_price' => 360.00,
-                'current_quantity' => 28.00,
-                'minimum_stock' => 10.00,
-                'supplier' => 'Mustang Thakali Organic Supplies',
-            ],
-            [
-                'category_slug' => 'food',
-                'name' => 'Chicken Dum Biryani',
-                'sku' => 'BRY-CHK-01',
-                'unit' => 'Piece',
-                'purchase_price' => 220.00,
-                'selling_price' => 450.00,
-                'current_quantity' => 14.00,
-                'minimum_stock' => 5.00,
-                'supplier' => 'Mughal Spices & Rice',
-            ],
-            [
-                'category_slug' => 'food',
-                'name' => 'Chicken Sekuwa Plate',
-                'sku' => 'SKW-CHK-01',
-                'unit' => 'Piece',
-                'purchase_price' => 180.00,
-                'selling_price' => 380.00,
-                'current_quantity' => 22.00,
-                'minimum_stock' => 6.00,
-                'supplier' => 'Valley Poultry Suppliers',
-            ],
+            ['category_slug' => 'food', 'name' => 'Buff Steamed Momo', 'sku' => 'MMO-BUF-STM', 'unit' => 'Piece', 'cost' => 110.00, 'price' => 220.00],
+            ['category_slug' => 'food', 'name' => 'Chicken Jhol Momo', 'sku' => 'MMO-CHK-JHL', 'unit' => 'Piece', 'cost' => 140.00, 'price' => 280.00],
+            ['category_slug' => 'food', 'name' => 'Veg Fried Momo', 'sku' => 'MMO-VEG-FRD', 'unit' => 'Piece', 'cost' => 80.00, 'price' => 180.00],
+            ['category_slug' => 'food', 'name' => 'Chicken Chowmein', 'sku' => 'CHW-CHK-01', 'unit' => 'Piece', 'cost' => 120.00, 'price' => 240.00],
+            ['category_slug' => 'food', 'name' => 'Veg Chowmein', 'sku' => 'CHW-VEG-01', 'unit' => 'Piece', 'cost' => 80.00, 'price' => 170.00],
+            ['category_slug' => 'food', 'name' => 'Chicken Thukpa', 'sku' => 'TKP-CHK-01', 'unit' => 'Piece', 'cost' => 130.00, 'price' => 260.00],
+            ['category_slug' => 'food', 'name' => 'Nepali Thakali Dal Bhat Set (Chicken)', 'sku' => 'DBT-CHK-01', 'unit' => 'Piece', 'cost' => 240.00, 'price' => 480.00],
+            ['category_slug' => 'food', 'name' => 'Nepali Thakali Dal Bhat Set (Veg)', 'sku' => 'DBT-VEG-01', 'unit' => 'Piece', 'cost' => 160.00, 'price' => 360.00],
+            ['category_slug' => 'food', 'name' => 'Chicken Dum Biryani', 'sku' => 'BRY-CHK-01', 'unit' => 'Piece', 'cost' => 220.00, 'price' => 450.00],
+            ['category_slug' => 'food', 'name' => 'Chicken Sekuwa Plate', 'sku' => 'SKW-CHK-01', 'unit' => 'Piece', 'cost' => 180.00, 'price' => 380.00],
 
             // Snacks
-            [
-                'category_slug' => 'snacks',
-                'name' => 'Newari Khaja Set with Choila',
-                'sku' => 'KHJ-NWR-01',
-                'unit' => 'Piece',
-                'purchase_price' => 190.00,
-                'selling_price' => 420.00,
-                'current_quantity' => 20.00,
-                'minimum_stock' => 5.00,
-                'supplier' => 'Bhaktapur Agro Products',
-            ],
-            [
-                'category_slug' => 'snacks',
-                'name' => 'Wai Wai Sadeko',
-                'sku' => 'SNK-WAI-01',
-                'unit' => 'Piece',
-                'purchase_price' => 45.00,
-                'selling_price' => 120.00,
-                'current_quantity' => 40.00,
-                'minimum_stock' => 10.00,
-                'supplier' => 'CG Foods Nepal',
-            ],
-            [
-                'category_slug' => 'snacks',
-                'name' => 'Crispy French Fries',
-                'sku' => 'SNK-FRS-01',
-                'unit' => 'Piece',
-                'purchase_price' => 65.00,
-                'selling_price' => 180.00,
-                'current_quantity' => 16.00,
-                'minimum_stock' => 5.00,
-                'supplier' => 'Balkhu Fresh Produce',
-            ],
-            [
-                'category_slug' => 'snacks',
-                'name' => 'Peanut Sadeko (Bhatmas Sadeko)',
-                'sku' => 'SNK-PNT-01',
-                'unit' => 'Piece',
-                'purchase_price' => 55.00,
-                'selling_price' => 150.00,
-                'current_quantity' => 18.00,
-                'minimum_stock' => 5.00,
-                'supplier' => 'Bhaktapur Agro Products',
-            ],
+            ['category_slug' => 'snacks', 'name' => 'Newari Khaja Set with Choila', 'sku' => 'KHJ-NWR-01', 'unit' => 'Piece', 'cost' => 190.00, 'price' => 420.00],
+            ['category_slug' => 'snacks', 'name' => 'Wai Wai Sadeko', 'sku' => 'SNK-WAI-01', 'unit' => 'Piece', 'cost' => 45.00, 'price' => 120.00],
+            ['category_slug' => 'snacks', 'name' => 'Crispy French Fries', 'sku' => 'SNK-FRS-01', 'unit' => 'Piece', 'cost' => 65.00, 'price' => 180.00],
+            ['category_slug' => 'snacks', 'name' => 'Peanut Sadeko (Bhatmas Sadeko)', 'sku' => 'SNK-PNT-01', 'unit' => 'Piece', 'cost' => 55.00, 'price' => 150.00],
 
             // Drinks
-            [
-                'category_slug' => 'drinks',
-                'name' => 'Nepali Milk Tea (Dudh Chiya)',
-                'sku' => 'DRK-MILK-TEA',
-                'unit' => 'Piece',
-                'purchase_price' => 15.00,
-                'selling_price' => 50.00,
-                'current_quantity' => 80.00,
-                'minimum_stock' => 15.00,
-                'supplier' => 'Ilam Tea Garden Estates',
-            ],
-            [
-                'category_slug' => 'drinks',
-                'name' => 'Special Masala Chiya',
-                'sku' => 'DRK-MSL-TEA',
-                'unit' => 'Piece',
-                'purchase_price' => 22.00,
-                'selling_price' => 70.00,
-                'current_quantity' => 60.00,
-                'minimum_stock' => 15.00,
-                'supplier' => 'Ilam Tea Garden Estates',
-            ],
-            [
-                'category_slug' => 'drinks',
-                'name' => 'Fresh Lemon Soda (Sweet/Salt)',
-                'sku' => 'DRK-LMN-SDA',
-                'unit' => 'Piece',
-                'purchase_price' => 35.00,
-                'selling_price' => 110.00,
-                'current_quantity' => 24.00,
-                'minimum_stock' => 8.00,
-                'supplier' => 'Himalayan Beverages',
-            ],
-            [
-                'category_slug' => 'drinks',
-                'name' => 'Everest Premium Lager Beer 650ml',
-                'sku' => 'DRK-EVR-650',
-                'unit' => 'Bottle',
-                'purchase_price' => 310.00,
-                'selling_price' => 520.00,
-                'current_quantity' => 32.00,
-                'minimum_stock' => 12.00,
-                'supplier' => 'Mt. Everest Brewery Ltd',
-            ],
-            [
-                'category_slug' => 'drinks',
-                'name' => 'Gorkha Strong Beer 650ml',
-                'sku' => 'DRK-GRK-650',
-                'unit' => 'Bottle',
-                'purchase_price' => 320.00,
-                'selling_price' => 540.00,
-                'current_quantity' => 19.00,
-                'minimum_stock' => 8.00,
-                'supplier' => 'Gorkha Brewery Nepal',
-            ],
-            [
-                'category_slug' => 'drinks',
-                'name' => 'Coca-Cola 500ml Pet Bottle',
-                'sku' => 'DRK-COKE-500',
-                'unit' => 'Bottle',
-                'purchase_price' => 60.00,
-                'selling_price' => 100.00,
-                'current_quantity' => 4.00, // LOW STOCK TRIGGER (below min 10)
-                'minimum_stock' => 10.00,
-                'supplier' => 'Bottlers Nepal Ltd',
-            ],
-            [
-                'category_slug' => 'drinks',
-                'name' => 'Himalayan Mineral Water 1L',
-                'sku' => 'DRK-WTR-1L',
-                'unit' => 'Bottle',
-                'purchase_price' => 20.00,
-                'selling_price' => 40.00,
-                'current_quantity' => 50.00,
-                'minimum_stock' => 15.00,
-                'supplier' => 'Aqua Minerals Nepal',
-            ],
+            ['category_slug' => 'drinks', 'name' => 'Nepali Milk Tea (Dudh Chiya)', 'sku' => 'DRK-MILK-TEA', 'unit' => 'Piece', 'cost' => 15.00, 'price' => 50.00],
+            ['category_slug' => 'drinks', 'name' => 'Special Masala Chiya', 'sku' => 'DRK-MSL-TEA', 'unit' => 'Piece', 'cost' => 22.00, 'price' => 70.00],
+            ['category_slug' => 'drinks', 'name' => 'Fresh Lemon Soda (Sweet/Salt)', 'sku' => 'DRK-LMN-SDA', 'unit' => 'Piece', 'cost' => 35.00, 'price' => 110.00],
+            ['category_slug' => 'drinks', 'name' => 'Everest Premium Lager Beer 650ml', 'sku' => 'DRK-EVR-650', 'unit' => 'Bottle', 'cost' => 310.00, 'price' => 520.00],
+            ['category_slug' => 'drinks', 'name' => 'Gorkha Strong Beer 650ml', 'sku' => 'DRK-GRK-650', 'unit' => 'Bottle', 'cost' => 320.00, 'price' => 540.00],
+            ['category_slug' => 'drinks', 'name' => 'Coca-Cola 500ml Pet Bottle', 'sku' => 'DRK-COKE-500', 'unit' => 'Bottle', 'cost' => 60.00, 'price' => 100.00],
+            ['category_slug' => 'drinks', 'name' => 'Himalayan Mineral Water 1L', 'sku' => 'DRK-WTR-1L', 'unit' => 'Bottle', 'cost' => 20.00, 'price' => 40.00],
 
             // Desserts
-            [
-                'category_slug' => 'desserts',
-                'name' => 'Warm Gulab Jamun (2 Pcs)',
-                'sku' => 'DST-GJM-02',
-                'unit' => 'Piece',
-                'purchase_price' => 40.00,
-                'selling_price' => 110.00,
-                'current_quantity' => 3.00, // LOW STOCK
-                'minimum_stock' => 8.00,
-                'supplier' => 'Marwadi Misthan Bhandar',
-            ],
-            [
-                'category_slug' => 'desserts',
-                'name' => 'Vanilla Scoop Ice Cream',
-                'sku' => 'DST-ICR-VAN',
-                'unit' => 'Piece',
-                'purchase_price' => 50.00,
-                'selling_price' => 140.00,
-                'current_quantity' => 0.00, // OUT OF STOCK TRIGGER
-                'minimum_stock' => 5.00,
-                'supplier' => 'Dairy Development Corporation',
-            ],
+            ['category_slug' => 'desserts', 'name' => 'Warm Gulab Jamun (2 Pcs)', 'sku' => 'DST-GJM-02', 'unit' => 'Piece', 'cost' => 40.00, 'price' => 110.00],
+            ['category_slug' => 'desserts', 'name' => 'Vanilla Scoop Ice Cream', 'sku' => 'DST-ICR-VAN', 'unit' => 'Piece', 'cost' => 50.00, 'price' => 140.00],
+        ];
 
+        $menuItems = [];
+        foreach ($menuItemsData as $row) {
+            $catSlug = $row['category_slug'];
+            unset($row['category_slug']);
+            $row['category_id'] = $categories[$catSlug]->id;
+            $row['is_available'] = true;
+
+            $item = MenuItem::create($row);
+            $menuItems[$item->sku] = $item;
+        }
+
+        // 6. Raw Materials & Supplies (stock tracked - kitchen ingredients, packaging)
+        $inventoryData = [
             // Raw Materials
-            [
-                'category_slug' => 'raw-materials',
-                'name' => 'Basmati Rice Premium (25kg Sack)',
-                'sku' => 'RAW-RCE-25K',
-                'unit' => 'Box',
-                'purchase_price' => 3200.00,
-                'selling_price' => 3800.00,
-                'current_quantity' => 6.00,
-                'minimum_stock' => 2.00,
-                'supplier' => 'Birgunj Food Wholesalers',
-            ],
-            [
-                'category_slug' => 'raw-materials',
-                'name' => 'Mustard Cooking Oil (5L Jar)',
-                'sku' => 'RAW-OIL-5L',
-                'unit' => 'Bottle',
-                'purchase_price' => 1150.00,
-                'selling_price' => 1400.00,
-                'current_quantity' => 8.00,
-                'minimum_stock' => 3.00,
-                'supplier' => 'Shree Oil Mills Biratnagar',
-            ],
-            [
-                'category_slug' => 'raw-materials',
-                'name' => 'Fresh Boneless Chicken (1 Kg)',
-                'sku' => 'RAW-CHK-1K',
-                'unit' => 'Kg',
-                'purchase_price' => 360.00,
-                'selling_price' => 460.00,
-                'current_quantity' => 12.50,
-                'minimum_stock' => 5.00,
-                'supplier' => 'Valley Poultry Suppliers',
-            ],
+            ['category_slug' => 'raw-materials', 'name' => 'Basmati Rice Premium (25kg Sack)', 'sku' => 'RAW-RCE-25K', 'unit' => 'Box', 'purchase_price' => 3200.00, 'selling_price' => 3800.00, 'current_quantity' => 6.00, 'minimum_stock' => 2.00, 'supplier' => 'Birgunj Food Wholesalers'],
+            ['category_slug' => 'raw-materials', 'name' => 'Mustard Cooking Oil (5L Jar)', 'sku' => 'RAW-OIL-5L', 'unit' => 'Bottle', 'purchase_price' => 1150.00, 'selling_price' => 1400.00, 'current_quantity' => 8.00, 'minimum_stock' => 3.00, 'supplier' => 'Shree Oil Mills Biratnagar'],
+            ['category_slug' => 'raw-materials', 'name' => 'Fresh Boneless Chicken (1 Kg)', 'sku' => 'RAW-CHK-1K', 'unit' => 'Kg', 'purchase_price' => 360.00, 'selling_price' => 460.00, 'current_quantity' => 12.50, 'minimum_stock' => 5.00, 'supplier' => 'Valley Poultry Suppliers'],
 
             // Packaging
-            [
-                'category_slug' => 'packaging',
-                'name' => 'Food Grade Parcel Box 750ml',
-                'sku' => 'PKG-BOX-750',
-                'unit' => 'Packet',
-                'purchase_price' => 8.00,
-                'selling_price' => 15.00,
-                'current_quantity' => 150.00,
-                'minimum_stock' => 30.00,
-                'supplier' => 'Everest Paper Packaging Co.',
-            ],
-            [
-                'category_slug' => 'packaging',
-                'name' => 'Embossed Paper Napkins (Pack of 100)',
-                'sku' => 'PKG-NPK-100',
-                'unit' => 'Packet',
-                'purchase_price' => 60.00,
-                'selling_price' => 90.00,
-                'current_quantity' => 22.00,
-                'minimum_stock' => 10.00,
-                'supplier' => 'Everest Paper Packaging Co.',
-            ],
+            ['category_slug' => 'packaging', 'name' => 'Food Grade Parcel Box 750ml', 'sku' => 'PKG-BOX-750', 'unit' => 'Packet', 'purchase_price' => 8.00, 'selling_price' => 15.00, 'current_quantity' => 150.00, 'minimum_stock' => 30.00, 'supplier' => 'Everest Paper Packaging Co.'],
+            ['category_slug' => 'packaging', 'name' => 'Embossed Paper Napkins (Pack of 100)', 'sku' => 'PKG-NPK-100', 'unit' => 'Packet', 'purchase_price' => 60.00, 'selling_price' => 90.00, 'current_quantity' => 4.00, 'minimum_stock' => 10.00, 'supplier' => 'Everest Paper Packaging Co.'],
         ];
 
         $createdItems = [];
-        foreach ($itemsData as $row) {
+        foreach ($inventoryData as $row) {
             $catSlug = $row['category_slug'];
             unset($row['category_slug']);
             $row['category_id'] = $categories[$catSlug]->id;
@@ -434,7 +151,7 @@ class DatabaseSeeder extends Seeder
             $item = InventoryItem::create($row);
             $createdItems[$item->sku] = $item;
 
-            // Log Initial Stock Transaction
+            // Log opening stock transaction
             if ($item->current_quantity > 0) {
                 InventoryTransaction::create([
                     'inventory_item_id' => $item->id,
@@ -445,13 +162,14 @@ class DatabaseSeeder extends Seeder
                     'purchase_price' => $item->purchase_price,
                     'reason' => 'Opening Inventory Balance',
                     'reference_id' => 'INIT-STOCK',
-                    'user_id' => $stockUser->id,
+                    'user_id' => $adminUser->id,
                     'created_at' => Carbon::now('Asia/Kathmandu')->subDays(5),
                 ]);
             }
         }
 
-        // 6. Sample Realistic Completed Sales & Invoices across previous days & today
+        // 7. Sample Realistic Completed Sales & Invoices across previous days & today
+        //    Sale items reference MENU items only - no inventory stock is deducted.
         $sampleSales = [
             [
                 'days_ago' => 3,
@@ -519,12 +237,14 @@ class DatabaseSeeder extends Seeder
             $saleLines = [];
 
             foreach ($s['items'] as $it) {
-                $itemModel = $createdItems[$it['sku']] ?? null;
-                if (!$itemModel) continue;
+                $itemModel = $menuItems[$it['sku']] ?? null;
+                if (!$itemModel) {
+                    continue;
+                }
 
                 $q = (float)$it['qty'];
-                $lineSub = round((float)$itemModel->selling_price * $q, 2);
-                $lineCost = round((float)$itemModel->purchase_price * $q, 2);
+                $lineSub = round((float)$itemModel->price * $q, 2);
+                $lineCost = round((float)$itemModel->cost * $q, 2);
                 $lineProf = round($lineSub - $lineCost, 2);
 
                 $subtotal += $lineSub;
@@ -533,8 +253,8 @@ class DatabaseSeeder extends Seeder
                 $saleLines[] = [
                     'item' => $itemModel,
                     'quantity' => $q,
-                    'unit_price' => (float)$itemModel->selling_price,
-                    'unit_cost' => (float)$itemModel->purchase_price,
+                    'unit_price' => (float)$itemModel->price,
+                    'unit_cost' => (float)$itemModel->cost,
                     'subtotal' => $lineSub,
                     'total_cost' => $lineCost,
                     'profit' => $lineProf,
@@ -553,7 +273,7 @@ class DatabaseSeeder extends Seeder
 
             $sale = Sale::create([
                 'sale_number' => $saleNumber,
-                'user_id' => $cashierUser->id,
+                'user_id' => $adminUser->id,
                 'customer_name' => $s['customer'],
                 'subtotal' => $subtotal,
                 'discount' => $discount,
@@ -571,7 +291,7 @@ class DatabaseSeeder extends Seeder
             foreach ($saleLines as $line) {
                 SaleItem::create([
                     'sale_id' => $sale->id,
-                    'inventory_item_id' => $line['item']->id,
+                    'menu_item_id' => $line['item']->id,
                     'item_name' => $line['item']->name,
                     'unit' => $line['item']->unit,
                     'quantity' => $line['quantity'],
@@ -580,21 +300,6 @@ class DatabaseSeeder extends Seeder
                     'subtotal' => $line['subtotal'],
                     'total_cost' => $line['total_cost'],
                     'profit' => $line['profit'],
-                    'created_at' => $saleDate,
-                    'updated_at' => $saleDate,
-                ]);
-
-                // Record Inventory deduction transaction
-                InventoryTransaction::create([
-                    'inventory_item_id' => $line['item']->id,
-                    'transaction_type' => 'Sale',
-                    'quantity' => $line['quantity'],
-                    'previous_quantity' => $line['item']->current_quantity + $line['quantity'],
-                    'new_quantity' => $line['item']->current_quantity,
-                    'purchase_price' => $line['unit_cost'],
-                    'reason' => "Sale #{$saleNumber}",
-                    'reference_id' => $saleNumber,
-                    'user_id' => $cashierUser->id,
                     'created_at' => $saleDate,
                     'updated_at' => $saleDate,
                 ]);
@@ -609,7 +314,7 @@ class DatabaseSeeder extends Seeder
                 'grand_total' => $grandTotal,
                 'payment_method' => $s['method'],
                 'payment_status' => 'Paid',
-                'cashier_name' => $cashierUser->name,
+                'cashier_name' => $adminUser->name,
                 'customer_name' => $s['customer'],
                 'restaurant_name' => 'Himalayan Flavors Cafe & Restaurant',
                 'restaurant_address' => 'Thamel Marg - 29, Kathmandu, Nepal',
@@ -628,7 +333,7 @@ class DatabaseSeeder extends Seeder
                 'amount' => $grandTotal,
                 'status' => 'Success',
                 'transaction_reference' => $s['method'] === 'Cash' ? null : 'TXN-' . strtoupper(Str::random(8)),
-                'user_id' => $cashierUser->id,
+                'user_id' => $adminUser->id,
                 'created_at' => $saleDate,
                 'updated_at' => $saleDate,
             ]);
