@@ -84,7 +84,6 @@ class StockService
     {
         $prevQty = (float)$item->current_quantity;
         $diff = (float)$newQuantity - $prevQty;
-        $type = $diff >= 0 ? 'Adjustment' : 'Adjustment';
 
         $item->current_quantity = $newQuantity;
         $item->save();
