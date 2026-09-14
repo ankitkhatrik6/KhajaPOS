@@ -47,9 +47,16 @@
 
                 <div>
                     <label for="password" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Password</label>
-                    <input type="password" id="password" name="password" value="" required 
-                           class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                           placeholder="Enter your password" autocomplete="current-password">
+                    <div class="relative">
+                        <input type="password" id="password" name="password" value="" required 
+                               class="w-full px-3.5 py-2.5 pr-11 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 @error('password') border-rose-500 @enderror"
+                               placeholder="Enter your password" autocomplete="current-password">
+                        <button type="button" id="toggle-password" aria-label="Show password"
+                                class="absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-400 hover:text-slate-600 focus:outline-none focus:text-emerald-600 transition">
+                            <i data-lucide="eye" id="icon-password-eye" class="w-5 h-5"></i>
+                            <i data-lucide="eye-off" id="icon-password-eye-off" class="w-5 h-5 hidden"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="flex items-center justify-between">
@@ -76,6 +83,23 @@
         document.addEventListener('DOMContentLoaded', function() {
             if (window.lucide) {
                 lucide.createIcons();
+            }
+
+            // Show / hide password toggle
+            const passwordInput = document.getElementById('password');
+            const togglePassword = document.getElementById('toggle-password');
+            const iconEye = document.getElementById('icon-password-eye');
+            const iconEyeOff = document.getElementById('icon-password-eye-off');
+            if (passwordInput && togglePassword && iconEye && iconEyeOff) {
+                togglePassword.addEventListener('click', function() {
+                    const isHidden = passwordInput.type === 'password';
+                    passwordInput.type = isHidden ? 'text' : 'password';
+                    iconEye.classList.toggle('hidden', !isHidden);
+                    iconEyeOff.classList.toggle('hidden', isHidden);
+                    togglePassword.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+                    // Keep the caret in the field so the user can keep typing.
+                    passwordInput.focus();
+                });
             }
         });
     </script>
