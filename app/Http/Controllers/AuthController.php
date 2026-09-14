@@ -26,14 +26,17 @@ class AuthController extends Controller
             $user = Auth::user();
             if (!$user->is_active) {
                 Auth::logout();
-                return back()->withErrors(['email' => 'This account has been deactivated.']);
+                return redirect()->route('login')->withErrors(['email' => 'This account has been deactivated.'])->onlyInput('email');
             }
 
             $request->session()->regenerate();
             return redirect()->intended(route('dashboard'));
         }
 
-        return back()->withErrors([
+        // Redirect explicitly to the login page: back() falls back to "/" when the
+        // request has no referrer (e.g. a user opened /login directly), which would
+        // silently drop the error message on the home page instead.
+        return redirect()->route('login')->withErrors([
             'email' => 'The provided credentials do not match our records.',
         ])->onlyInput('email');
     }
