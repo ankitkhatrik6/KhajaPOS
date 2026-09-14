@@ -91,23 +91,25 @@
                 </div>
             </div>
 
-            <div class="pt-4 border-t border-slate-200 flex items-center justify-between">
-                <form action="{{ route('inventory.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this item? If sales exist, it will be rejected.')">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="text-xs text-rose-600 hover:text-rose-800 font-semibold flex items-center gap-1">
-                        <i data-lucide="trash" class="w-4 h-4"></i>
-                        <span>Delete Material</span>
-                    </button>
-                </form>
-
-                <div class="flex gap-2">
-                    <a href="{{ route('inventory.index') }}" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</a>
-                    <button type="submit" class="px-5 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow transition">
-                        Update Item
-                    </button>
-                </div>
+            <div class="pt-4 border-t border-slate-200 flex justify-end gap-2">
+                <a href="{{ route('inventory.index') }}" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</a>
+                <button type="submit" class="px-5 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow transition">
+                    Update Item
+                </button>
             </div>
+        </form>
+    </div>
+
+    <!-- Delete Material: kept outside the update form so its button submits its own DELETE request -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex items-center justify-between">
+        <p class="text-xs text-slate-400">Deleting is blocked when stock history exists — set the item to Inactive instead.</p>
+        <form action="{{ route('inventory.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this item? If stock history exists, it will be rejected.')">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="text-xs text-rose-600 hover:text-rose-800 font-semibold flex items-center gap-1">
+                <i data-lucide="trash" class="w-4 h-4"></i>
+                <span>Delete Material</span>
+            </button>
         </form>
     </div>
 </div>
