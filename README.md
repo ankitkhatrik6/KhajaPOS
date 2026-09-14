@@ -43,6 +43,12 @@ The system runs entirely on MySQL or MariaDB and is served by PHP, which makes i
 | Server      | PHP built-in server or XAMPP Apache     |
 | Tooling     | Composer, Git, GitHub Actions (optional)| 
 
+## Screenshots
+
+| POS Billing Terminal | Operational Dashboard | Menu Management |
+| -------------------- | --------------------- | --------------- |
+| <img src="demo/pos.jpg" alt="POS Billing Terminal" width="300"> | <img src="demo/dash.jpg" alt="Operational Dashboard" width="300"> | <img src="demo/menu.jpg" alt="Menu Management" width="300"> |
+
 ## Getting Started
 
 ### Prerequisites

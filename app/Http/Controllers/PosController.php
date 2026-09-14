@@ -47,7 +47,7 @@ class PosController extends Controller
     public function quickStockCheck($id)
     {
         $item = MenuItem::find($id);
-        if (!$item) {
+        if (!$item || !$item->is_available) {
             return response()->json(['error' => 'Item not found'], 404);
         }
 
@@ -66,7 +66,7 @@ class PosController extends Controller
     {
         $request->validate([
             'items' => ['required', 'array', 'min:1'],
-            'items.*.item_id' => ['required', 'integer', 'exists:menu_items,id', 'exists:menu_items,id,is_available,1'],
+            'items.*.item_id' => ['required', 'integer', 'exists:menu_items,id,is_available,1'],
             'items.*.quantity' => ['required', 'numeric', 'min:0.01'],
             'customer_name' => ['nullable', 'string', 'max:150'],
             'discount' => ['nullable', 'numeric', 'min:0'],
