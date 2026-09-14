@@ -120,8 +120,15 @@
 
             <div>
                 <label class="block text-xs font-semibold text-slate-600 mb-1">Password <span id="pass-hint" class="text-slate-400 font-normal"></span></label>
-                <input type="password" name="password" id="user-password-input" placeholder="••••••••"
-                       class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-1 focus:ring-emerald-500">
+                <div class="relative">
+                    <input type="password" name="password" id="user-password-input" placeholder="••••••••"
+                           class="w-full px-3 py-2 pr-10 border border-slate-300 rounded-lg text-xs focus:ring-1 focus:ring-emerald-500">
+                    <button type="button" id="toggle-user-password" aria-label="Show password"
+                            class="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600 focus:outline-none focus:text-emerald-600 transition">
+                        <i data-lucide="eye" id="icon-user-password-eye" class="w-4 h-4"></i>
+                        <i data-lucide="eye-off" id="icon-user-password-eye-off" class="w-4 h-4 hidden"></i>
+                    </button>
+                </div>
             </div>
 
             <div id="user-active-container" class="hidden">
@@ -155,6 +162,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const activeContainer = document.getElementById('user-active-container');
     const activeInput = document.getElementById('user-active-input');
     const methodContainer = document.getElementById('user-method-container');
+
+    // Show / hide password toggle for the staff form
+    const userToggle = document.getElementById('toggle-user-password');
+    const userEye = document.getElementById('icon-user-password-eye');
+    const userEyeOff = document.getElementById('icon-user-password-eye-off');
+    if (passInput && userToggle && userEye && userEyeOff) {
+        userToggle.addEventListener('click', function() {
+            const isHidden = passInput.type === 'password';
+            passInput.type = isHidden ? 'text' : 'password';
+            userEye.classList.toggle('hidden', !isHidden);
+            userEyeOff.classList.toggle('hidden', isHidden);
+            userToggle.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+            passInput.focus();
+        });
+    }
 
     document.getElementById('btn-create-user').addEventListener('click', function() {
         form.action = "{{ route('users.store') }}";
