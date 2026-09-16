@@ -30,6 +30,8 @@ The system runs entirely on MySQL or MariaDB and is served by PHP, which makes i
 - VAT-compliant tax invoice generation in printable A4 and 80mm thermal receipt formats
 - Sales, payment method and profit reporting in NPR
 - Role based access for admin, cashier and stock manager accounts
+- Navigation is role aware — each staff member only sees the sections their role can access
+- Admin-only permanent deletion of staff, invoices, stock items, categories and menu items
 - Responsive light themed interface that works on desktop and mobile browsers
 - Live operational dashboard with sales trends and payment distribution charts
 
@@ -107,6 +109,29 @@ The database seeder creates a single administrator account (roles for Cashier an
 | Role  | Email              | Password      | Access             |
 | ----- | ------------------ | ------------- | ------------------ |
 | Admin | admin@khajapos.com | KhajaPOS@123  | Full system access |
+
+### Role Based Section Visibility
+
+The sidebar (desktop) and mobile drawer only display the sections a role is allowed to open — access is still enforced server side on every route:
+
+| Section             | Admin | Cashier | Stock Manager |
+| ------------------- | :---: | :-----: | :-----------: |
+| POS Billing         |  ✓    |    ✓    |      ✗        |
+| Sales & Invoices    |  ✓    |    ✓    |      ✗        |
+| Stock & Inventory   |  ✓    |    ✗    |      ✓        |
+| Categories          |  ✓    |    ✗    |      ✓        |
+| Operational Reports |  ✓    |    ✗    |      ✓        |
+| Menu Management     |  ✓    |    ✗    |      ✗        |
+| Settings / Staff    |  ✓    |    ✗    |      ✗        |
+
+### Permanent Deletion (Admin Only)
+
+Any destructive action is restricted to the **Admin** role:
+
+- **Staff & Roles → trash icon** permanently removes a user. Guards: you cannot delete your own account, the last active admin, or anyone with recorded sales history (deactivate those instead).
+- **Invoices → trash icon** permanently deletes an invoice together with its linked sale, line items and payments.
+- **Stock Inventory → Edit → Delete Material** permanently deletes an item and its full stock history.
+- Content blocks with dependants (categories that still have menu/stock items) are rejected to protect historical records.
 
 ## Payments
 
