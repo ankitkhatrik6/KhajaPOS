@@ -69,4 +69,37 @@ class UserController extends Controller
         $status = $user->is_active ? 'activated' : 'deactivated';
         return back()->with('success', "Staff account {$status}.");
     }
+
+    /**
+     * Permanently remove a staff member. Deletion is guarded so the current
+     * admin cannot delete their own account, the last active admin cannot be
+     * removed, and accounts with recorded sales are kept (the sales FK is
+     * RESTRICT) — those should be deactivated instead.
+     */
+    public function destroy(User $user)
+    {
+        if ($user->id === auth()->id()) {
+            return back()->with('error', 'You cannot permanently remove your own account.');
+        }
+
+        if ($user->isAdmin()) {
+            $otherActiveAdmins = User::where('id', '!=', $user->id)
+                ->where('is_active', true)
+                ->whereHas('role', fn ($q) => $q->where('slug', 'admin'))
+                ->count();
+
+            if ($otherActiveAdmins === 0) {
+                return back()->with('error', 'Cannot permanently remove the last active administrator account.');
+            }
+        }
+
+        if ($user->sales()->exists()) {
+            return back()->with('error', "Cannot permanently remove '{$user->name}' because they have recorded sales history. Deactivate the account instead.");
+        }
+
+        $name = $user->name;
+        $user->delete();
+
+        return back()->with('success', "Staff member '{$name}' has been permanently removed.");
+    }
 }
