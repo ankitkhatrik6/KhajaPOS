@@ -36,6 +36,14 @@
     @stack('styles')
 </head>
 <body class="h-full font-sans antialiased text-slate-800 flex flex-col bg-slate-100">
+    @php
+        $userRole = auth()->user();
+        $isAdmin = $userRole->isAdmin();
+        $isCashier = $userRole->isCashier();
+        $isStockManager = $userRole->isStockManager();
+        $canUsePos = $isAdmin || $isCashier;
+        $canManageStock = $isAdmin || $isStockManager;
+    @endphp
     <!-- Top Navbar (light) -->
     <header class="bg-white text-slate-800 sticky top-0 z-40 border-b border-slate-200 shadow-sm no-print">
         <div class="px-4 sm:px-6 lg:px-8">
@@ -60,12 +68,14 @@
                 </div>
 
                 <!-- Center: POS Quick Action -->
+                @if($canUsePos)
                 <div class="hidden sm:flex items-center space-x-2">
                     <a href="{{ route('pos.index') }}" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-all">
                         <i data-lucide="shopping-cart" class="w-4 h-4"></i>
                         <span>Open POS Billing</span>
                     </a>
                 </div>
+                @endif
 
                 <!-- Right: Clock & User -->
                 <div class="flex items-center space-x-3">
@@ -117,18 +127,21 @@
                         <span>Dashboard</span>
                     </a>
 
+                    @if($canUsePos)
                     <a href="{{ route('pos.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition {{ request()->routeIs('pos.*') ? 'bg-emerald-600 text-white font-semibold shadow-sm' : 'text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800' }}">
                         <i data-lucide="shopping-cart" class="w-5 h-5"></i>
                         <span>POS Billing Terminal</span>
                     </a>
+                    @endif
 
-                    @if(auth()->user()->isAdmin())
+                    @if($isAdmin)
                     <a href="{{ route('menu.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition {{ request()->routeIs('menu.*') ? 'bg-emerald-50 text-emerald-800 font-semibold' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}">
                         <i data-lucide="utensils" class="w-5 h-5 text-orange-500"></i>
                         <span>Menu Management</span>
                     </a>
                     @endif
 
+                    @if($canManageStock)
                     <div class="pt-3 pb-1">
                         <p class="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Stock & Inventory</p>
                     </div>
@@ -147,7 +160,9 @@
                         <i data-lucide="tags" class="w-5 h-5 text-amber-500"></i>
                         <span>Categories</span>
                     </a>
+                    @endif
 
+                    @if($canUsePos)
                     <div class="pt-3 pb-1">
                         <p class="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Billing & Reports</p>
                     </div>
@@ -161,7 +176,9 @@
                         <i data-lucide="file-text" class="w-5 h-5 text-sky-500"></i>
                         <span>Invoices & Receipts</span>
                     </a>
+                    @endif
 
+                    @if($canManageStock)
                     <div class="pt-3 pb-1">
                         <p class="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Reports & Analytics</p>
                     </div>
@@ -170,8 +187,9 @@
                         <i data-lucide="bar-chart-2" class="w-5 h-5 text-violet-500"></i>
                         <span>Operational Reports</span>
                     </a>
+                    @endif
 
-                    @if(auth()->user()->isAdmin())
+                    @if($isAdmin)
                     <div class="pt-3 pb-1">
                         <p class="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Administration</p>
                     </div>
@@ -272,20 +290,25 @@
                         <i data-lucide="layout-dashboard" class="w-5 h-5 text-indigo-500"></i>
                         <span>Dashboard</span>
                     </a>
+                    @if($canUsePos)
                     <a href="{{ route('pos.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold text-emerald-700 hover:bg-emerald-50">
                         <i data-lucide="shopping-cart" class="w-5 h-5"></i>
                         <span>POS Billing</span>
                     </a>
-                    @if(auth()->user()->isAdmin())
+                    @endif
+                    @if($isAdmin)
                     <a href="{{ route('menu.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-100">
                         <i data-lucide="utensils" class="w-5 h-5 text-orange-500"></i>
                         <span>Menu Management</span>
                     </a>
                     @endif
+                    @if($canManageStock)
                     <a href="{{ route('inventory.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-100">
                         <i data-lucide="package" class="w-5 h-5 text-amber-500"></i>
                         <span>Inventory</span>
                     </a>
+                    @endif
+                    @if($canUsePos)
                     <a href="{{ route('sales.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-100">
                         <i data-lucide="receipt" class="w-5 h-5 text-sky-500"></i>
                         <span>Sales</span>
@@ -294,10 +317,13 @@
                         <i data-lucide="file-text" class="w-5 h-5 text-sky-500"></i>
                         <span>Invoices</span>
                     </a>
+                    @endif
+                    @if($canManageStock)
                     <a href="{{ route('reports.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-100">
                         <i data-lucide="bar-chart-2" class="w-5 h-5 text-violet-500"></i>
                         <span>Reports</span>
                     </a>
+                    @endif
                 </nav>
             </div>
             <div class="pt-4 border-t border-slate-200">

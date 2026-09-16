@@ -44,6 +44,8 @@ class CategoryController extends Controller
 
     public function destroy(Category $category)
     {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
         if ($category->menuItems()->count() > 0 || $category->inventoryItems()->count() > 0) {
             return back()->with('error', "Cannot delete category '{$category->name}' because menu items or raw materials belong to it.");
         }

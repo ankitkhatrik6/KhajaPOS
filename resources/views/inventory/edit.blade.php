@@ -100,15 +100,15 @@
         </form>
     </div>
 
-    <!-- Delete Material: kept outside the update form so its button submits its own DELETE request -->
+    <!-- Delete Material: kept outside the update form so its button submits its own DELETE request (Admin only) -->
     <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex items-center justify-between">
-        <p class="text-xs text-slate-400">Deleting is blocked when stock history exists — set the item to Inactive instead.</p>
-        <form action="{{ route('inventory.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this item? If stock history exists, it will be rejected.')">
+        <p class="text-xs text-slate-400">Permanently delete this material and its full stock history. Only administrators can delete stock items.</p>
+        <form action="{{ route('inventory.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to permanently delete this item and all of its stock history? This cannot be undone.')">
             @csrf
             @method('DELETE')
             <button type="submit" class="text-xs text-rose-600 hover:text-rose-800 font-semibold flex items-center gap-1">
-                <i data-lucide="trash" class="w-4 h-4"></i>
-                <span>Delete Material</span>
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                <span>Delete Material (Admin Only)</span>
             </button>
         </form>
     </div>

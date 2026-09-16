@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Invoice;
 use App\Models\RestaurantSetting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class InvoiceController extends Controller
 {
@@ -37,5 +38,28 @@ class InvoiceController extends Controller
     {
         $invoice->load(['sale.items.menuItem', 'sale.user', 'payments']);
         return view('invoices.receipt', compact('invoice'));
+    }
+
+    /**
+     * Permanently delete an invoice together with its linked sale record
+     * (sale_items and payments cascade automatically). Admin only — the route
+     * lives in the admin role group.
+     */
+    public function destroy(Invoice $invoice)
+    {
+        $number = $invoice->invoice_number;
+
+        DB::transaction(function () use ($invoice) {
+            $invoice->load('sale');
+
+            if ($invoice->sale) {
+                $invoice->sale->delete(); // cascades invoice, sale_items and payments
+            } else {
+                $invoice->delete();
+            }
+        });
+
+        return redirect()->route('invoices.index')
+            ->with('success', "Invoice {$number} and its sale record were permanently deleted.");
     }
 }
