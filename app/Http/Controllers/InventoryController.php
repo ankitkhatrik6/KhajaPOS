@@ -208,10 +208,9 @@ class InventoryController extends Controller
 
     public function destroy(InventoryItem $item)
     {
-        if ($item->transactions()->count() > 0) {
-            return back()->with('error', "Cannot delete '{$item->name}' because stock history exists. You can set its status to 'Inactive' instead.");
-        }
+        abort_unless(auth()->user()->isAdmin(), 403);
 
+        // Admin permanent delete: stock history rows cascade with the item.
         $item->delete();
         return redirect()->route('inventory.index')->with('success', "Item deleted successfully.");
     }
