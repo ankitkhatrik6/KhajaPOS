@@ -49,7 +49,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/inventory', [InventoryController::class, 'store'])->name('inventory.store');
         Route::get('/inventory/{item}/edit', [InventoryController::class, 'edit'])->name('inventory.edit');
         Route::put('/inventory/{item}', [InventoryController::class, 'update'])->name('inventory.update');
-        Route::delete('/inventory/{item}', [InventoryController::class, 'destroy'])->name('inventory.destroy');
 
         Route::post('/inventory/{item}/stock-in', [InventoryController::class, 'stockIn'])->name('inventory.stock-in');
         Route::post('/inventory/{item}/adjust', [InventoryController::class, 'adjust'])->name('inventory.adjust');
@@ -59,7 +58,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
         Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
         Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
-        Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
 
         Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     });
@@ -84,5 +82,14 @@ Route::middleware('auth')->group(function () {
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::post('/users/{user}/toggle', [UserController::class, 'toggleStatus'])->name('users.toggle');
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+    });
+
+    // Deletion of financial & stock records is Admin only. Stock managers/cashiers
+    // manage day-to-day stock and billing but cannot permanently remove records.
+    Route::middleware('role:admin')->group(function () {
+        Route::delete('/invoices/{invoice}', [InvoiceController::class, 'destroy'])->name('invoices.destroy');
+        Route::delete('/inventory/{item}', [InventoryController::class, 'destroy'])->name('inventory.destroy');
+        Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
     });
 });
