@@ -66,6 +66,14 @@
                                         {{ $u->is_active ? 'Deactivate' : 'Activate' }}
                                     </button>
                                 </form>
+                                <form action="{{ route('users.destroy', $u->id) }}" method="POST" class="inline"
+                                      onsubmit="return confirm('Permanently remove {{ $u->name }}? This cannot be undone. Users with sales history and the last active admin cannot be removed.');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="p-1.5 rounded text-rose-500 hover:bg-rose-50" title="Permanently remove user">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </form>
                                 @endif
                             </div>
                         </td>
