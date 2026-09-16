@@ -87,6 +87,16 @@
                                     <i data-lucide="printer" class="w-3.5 h-3.5"></i>
                                     <span>Receipt</span>
                                 </a>
+                                @if(auth()->user()->isAdmin())
+                                <form action="{{ route('invoices.destroy', $invoice->id) }}" method="POST" class="inline"
+                                      onsubmit="return confirm('Delete invoice {{ $invoice->invoice_number }}? The linked sale, its line items and payments will also be permanently removed. This cannot be undone.');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="p-1.5 rounded text-rose-500 hover:bg-rose-50" title="Permanently delete invoice (admin only)">
+                                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                </form>
+                                @endif
                             </div>
                         </td>
                     </tr>
