@@ -1,0 +1,24 @@
+[Desktop Entry]
+Type=Application
+Version=1.1
+Name=KhajaPOS
+GenericName=Restaurant POS
+Comment=Restaurant Point of Sale, Inventory and Billing System (local server)
+Exec=/usr/bin/khajapos-app
+Icon=khajapos
+Terminal=false
+Categories=Office;
+Keywords=POS;Restaurant;Billing;Inventory;Cafe;Finance;Local server;Point of Sale;KhajaPOS;
+StartupNotify=true
+StartupWMClass=khajapos-app
+X-GNOME-UsesNotifications=true
+X-Ubuntu-Gettext-Domain=khajapos
+Actions=kiosk;browser;
+
+[Desktop Action kiosk]
+Name=KhajaPOS (Fullscreen / POS Counter)
+Exec=/usr/bin/khajapos-app --kiosk
+
+[Desktop Action browser]
+Name=Open in Web Browser
+Exec=/usr/bin/khajapos open
