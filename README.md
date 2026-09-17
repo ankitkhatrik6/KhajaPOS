@@ -6,12 +6,12 @@
 
 ### Restaurant Point of Sale, Inventory and Billing System
 
-[![PHP](https://img.shields.io/badge/PHP-8.2-7c3aed)](composer.json)
-[![Laravel](https://img.shields.io/badge/Framework-Laravel%2012-4b0082)](composer.json)
-[![Database](https://img.shields.io/badge/Database-MySQL%2FMariaDB-00758f)](config/database.php)
-[![Download](https://img.shields.io/badge/Download-Linux%20(.deb)-2ea043)](https://github.com/ankitkhatrik6/KhajaPOS/releases)
-[![License](https://img.shields.io/badge/License-MIT-brightgreen)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-Active-2ea043)](routes/web.php)
+[![PHP](https://img.shields.io/badge/PHP-8.2-166534?style=flat-square&logo=php&logoColor=white)](composer.json)
+[![Laravel](https://img.shields.io/badge/Laravel-12-14532D?style=flat-square&logo=laravel&logoColor=white)](composer.json)
+[![Database](https://img.shields.io/badge/Database-MySQL%20%2F%20MariaDB-115E3A?style=flat-square&logo=mysql&logoColor=white)](config/database.php)
+[![Linux](https://img.shields.io/badge/Linux-.deb-15803D?style=flat-square&logo=linux&logoColor=white)](https://github.com/ankitkhatrik6/KhajaPOS/releases)
+[![License](https://img.shields.io/badge/License-MIT-166534?style=flat-square&logo=opensourceinitiative&logoColor=white)](LICENSE)
+[![Status](https://img.shields.io/badge/Status-Active-14532D?style=flat-square)](routes/web.php)
 
 </div>
 
