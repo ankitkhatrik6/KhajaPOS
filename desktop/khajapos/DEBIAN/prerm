@@ -1,0 +1,13 @@
+#!/bin/bash
+# KhajaPOS Debian package - prerm
+# Stops the service before the package files are removed.
+set -e
+
+SERVICE=khajapos.service
+
+if [ "$1" = "remove" ] || [ "$1" = "deconfigure" ] || [ "$1" = "purge" ]; then
+    systemctl disable "$SERVICE" >/dev/null 2>&1 || true
+fi
+systemctl stop "$SERVICE" >/dev/null 2>&1 || true
+
+exit 0

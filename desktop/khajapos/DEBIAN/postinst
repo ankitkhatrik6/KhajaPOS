@@ -1,0 +1,187 @@
+#!/bin/bash
+# KhajaPOS Debian package - postinst
+# Configures the application, database and systemd service.
+set -e
+
+APP_NAME=KhajaPOS
+APP_DIR=/opt/khajapos
+CONF_DIR=/etc/khajapos
+ENV_FILE="$CONF_DIR/.env"
+APP_ENV_FILE="$APP_DIR/.env"
+SERVICE=khajapos.service
+DB_NAME=restaurant_pos
+DB_USER=pos_user
+SETUP_LOG=/var/log/khajapos/postinst.log
+
+log() { echo "[khajapos] $*" | tee -a "$SETUP_LOG"; }
+
+# ---------------------------------------------------------------------------
+# 1) Dedicated system user and group
+# ---------------------------------------------------------------------------
+if ! getent group khajapos >/dev/null 2>&1; then
+    addgroup --system khajapos
+fi
+if ! getent passwd khajapos >/dev/null 2>&1; then
+    adduser --system --ingroup khajapos --home /var/lib/khajapos \
+            --no-create-home --shell /usr/sbin/nologin khajapos
+fi
+
+install -d -o khajapos -g khajapos /var/lib/khajapos /var/lib/khajapos/backups /var/log/khajapos
+touch "$SETUP_LOG" && chown khajapos:khajapos "$SETUP_LOG"
+log "System user 'khajapos' ready"
+
+# ---------------------------------------------------------------------------
+# 2) Configuration file (/etc/khajapos/.env is a dpkg conffile).
+#    Only first install generates it; upgrades keep the existing one.
+# ---------------------------------------------------------------------------
+if [ ! -f "$ENV_FILE" ]; then
+    cp "$APP_DIR/.env.package" "$ENV_FILE" 2>/dev/null || true
+    LAN_IP=""
+    if command -v hostname >/dev/null 2>&1; then
+        LAN_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+    fi
+    if [ -f "$ENV_FILE" ] && [ -n "$LAN_IP" ]; then
+        sed -i "s|^APP_URL=.*|APP_URL=http://$LAN_IP:3000|" "$ENV_FILE"
+    fi
+    log "Created $ENV_FILE (default admin: admin@khajapos.com / KhajaPOS@123)"
+fi
+
+# ---------------------------------------------------------------------------
+# 3) Sync .env into the application directory and fill in generated secrets
+# ---------------------------------------------------------------------------
+install -o khajapos -g khajapos -m 640 "$ENV_FILE" "$APP_ENV_FILE"
+
+# 3a) APP_KEY (Laravel app encryption key)
+if ! grep -q '^APP_KEY=.\+' "$APP_ENV_FILE" 2>/dev/null; then
+    APP_KEY="base64:$(php -r 'echo base64_encode(random_bytes(32));' 2>/dev/null)"
+    if [ -n "$APP_KEY" ] && [ "$APP_KEY" != "base64:" ]; then
+        sed -i "s|^APP_KEY=.*|APP_KEY=$APP_KEY|" "$APP_ENV_FILE"
+        sed -i "s|^APP_KEY=.*|APP_KEY=$APP_KEY|" "$ENV_FILE"
+        log "Generated APP_KEY"
+    fi
+fi
+
+# 3b) DB_PASSWORD (restaurant_pos / pos_user)
+if ! grep -q '^DB_PASSWORD=.\+' "$APP_ENV_FILE" 2>/dev/null; then
+    DB_PW="$(php -r 'echo bin2hex(random_bytes(16));' 2>/dev/null)"
+    if [ -n "$DB_PW" ]; then
+        sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=$DB_PW|" "$APP_ENV_FILE"
+        sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=$DB_PW|" "$ENV_FILE"
+        log "Generated database password"
+    fi
+fi
+
+# ---------------------------------------------------------------------------
+# 4) Permissions: the application must be writable by the khajapos user
+#    (Laravel writes sessions, cache, compiled views and logs under /opt).
+# ---------------------------------------------------------------------------
+chown -R khajapos:khajapos "$APP_DIR"
+find "$APP_DIR" -type d -exec chmod 750 {} + 2>/dev/null || true
+install -d -o khajapos -g khajapos \
+    "$APP_DIR/storage" \
+    "$APP_DIR/storage/logs" \
+    "$APP_DIR/storage/framework/sessions" \
+    "$APP_DIR/storage/framework/views" \
+    "$APP_DIR/storage/framework/cache" \
+    "$APP_DIR/bootstrap/cache"
+
+systemctl daemon-reload >/dev/null 2>&1 || true
+# ---------------------------------------------------------------------------
+# 5) Database preparation (idempotent, non-fatal on failure)
+# ---------------------------------------------------------------------------
+DB_OK=0
+DB_CLIENT=$(command -v mariadb || command -v mysql || true)
+[ -z "$DB_CLIENT" ] && [ -x /opt/lampp/bin/mysql ] && DB_CLIENT=/opt/lampp/bin/mysql
+DB_PW_VALUE="$(sed -n 's/^DB_PASSWORD=//p' "$APP_ENV_FILE")"
+
+db_root_client() {
+    # root on Debian/Ubuntu MariaDB authenticates via unix socket when run as root
+    if [ -n "$DB_CLIENT" ]; then
+        "$DB_CLIENT" -uroot "$@" 2>/dev/null && return 0
+        "$DB_CLIENT" -h127.0.0.1 -uroot --password='' "$@" 2>/dev/null && return 0
+    fi
+    return 1
+}
+
+if [ -z "$DB_CLIENT" ]; then
+    log "WARNING: no mariadb/mysql client found - database setup skipped"
+elif ! db_root_client -e 'SELECT 1' >/dev/null 2>&1 && [ -n "$DB_PW_VALUE" ]; then
+    # Existing deployments may have a root password; try the pos_user instead
+    "$DB_CLIENT" -h127.0.0.1 -u"$DB_USER" -p"$DB_PW_VALUE" -e 'SELECT 1' >/dev/null 2>&1 && DB_OK=1
+fi
+
+if [ "$DB_OK" -eq 0 ] && [ -n "$DB_CLIENT" ]; then
+    db_root_client -e "CREATE DATABASE IF NOT EXISTS \`$DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" \
+        && db_root_client -e "CREATE USER IF NOT EXISTS '$DB_USER'@'127.0.0.1' IDENTIFIED BY '$DB_PW_VALUE';" \
+        && db_root_client -e "CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PW_VALUE';" \
+        && db_root_client -e "ALTER USER '$DB_USER'@'127.0.0.1' IDENTIFIED BY '$DB_PW_VALUE';" \
+        && db_root_client -e "ALTER USER '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PW_VALUE';" \
+        && db_root_client -e "GRANT ALL PRIVILEGES ON \`$DB_NAME\`.* TO '$DB_USER'@'127.0.0.1'; FLUSH PRIVILEGES;" \
+        && db_root_client -e "GRANT ALL PRIVILEGES ON \`$DB_NAME\`.* TO '$DB_USER'@'localhost'; FLUSH PRIVILEGES;" \
+        && DB_OK=1
+    [ "$DB_OK" -eq 1 ] && log "Database '$DB_NAME' and user '$DB_USER' are ready" || \
+        log "WARNING: could not prepare the database (is MariaDB/MySQL running?)"
+fi
+
+# ---------------------------------------------------------------------------
+# 6) Migrations + conditional seed (run as the khajapos user)
+# ---------------------------------------------------------------------------
+if [ "$DB_OK" -eq 1 ]; then
+    if su -s /bin/bash khajapos -c "cd '$APP_DIR' && php artisan migrate --force" >>"$SETUP_LOG" 2>&1; then
+        ROLES_COUNT=$(db_root_client -N -e "SELECT COUNT(*) FROM \`$DB_NAME\`.roles;" 2>/dev/null || echo "0")
+        if [ "${ROLES_COUNT:-0}" = "0" ]; then
+            if su -s /bin/bash khajapos -c "cd '$APP_DIR' && php artisan db:seed --force" >>"$SETUP_LOG" 2>&1; then
+                log "Database seeded with demo data and admin account"
+            else
+                log "WARNING: initial seeding failed - see $SETUP_LOG"
+            fi
+        fi
+    else
+        log "WARNING: 'php artisan migrate' failed - see $SETUP_LOG"
+    fi
+fi
+
+# Dump the generated config to /etc so a fresh upgrade always has it
+cp -a "$APP_ENV_FILE" "$ENV_FILE" 2>/dev/null || true
+# ---------------------------------------------------------------------------
+# 7) Enable and start the systemd service
+# ---------------------------------------------------------------------------
+if command -v systemctl >/dev/null 2>&1; then
+    systemctl daemon-reload >/dev/null 2>&1 || true
+    systemctl enable "$SERVICE" >/dev/null 2>&1 || true
+    if systemctl is-active "$SERVICE" >/dev/null 2>&1; then
+        systemctl restart "$SERVICE" >/dev/null 2>&1 || true
+    else
+        systemctl start "$SERVICE" >/dev/null 2>&1 || true
+    fi
+    if systemctl is-active "$SERVICE" >/dev/null 2>&1; then
+        log "KhajaPOS service is running"
+    else
+        log "WARNING: KhajaPOS service did not start - check 'sudo khajapos doctor'"
+    fi
+else
+    log "WARNING: systemd not found - start manually: cd $APP_DIR && php artisan serve --host=0.0.0.0 --port=3000"
+fi
+
+# ---------------------------------------------------------------------------
+# 8) Desktop integration: refresh the application menu and icon cache
+# ---------------------------------------------------------------------------
+if command -v update-desktop-database >/dev/null 2>&1; then
+    update-desktop-database -q /usr/share/applications 2>/dev/null || true
+fi
+if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+    gtk-update-icon-cache -q -f /usr/share/icons/hicolor 2>/dev/null || true
+fi
+
+LAN_IP=""
+command -v hostname >/dev/null 2>&1 && LAN_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+log ""
+log "KhajaPOS installed successfully."
+log "  Local access : http://localhost:3000"
+[ -n "$LAN_IP" ] && log "  Network access: http://$LAN_IP:3000"
+log "  Admin login  : admin@khajapos.com  /  KhajaPOS@123"
+log "  Desktop      : click 'KhajaPOS' in the application menu (auto-starts the server)"
+log "  Manage       : sudo khajapos status|start|stop|restart|config|backup|doctor"
+
+exit 0
+log "Application installed at $APP_DIR"

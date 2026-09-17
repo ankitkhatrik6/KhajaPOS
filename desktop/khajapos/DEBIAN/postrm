@@ -1,0 +1,24 @@
+#!/bin/bash
+# KhajaPOS Debian package - postrm
+# Cleans up runtime state only when the package is purged.
+# A normal "remove" keeps the configuration, database and user data.
+set -e
+
+if [ "$1" = "purge" ]; then
+    systemctl daemon-reload >/dev/null 2>&1 || true
+
+    # Remove the dedicated system user and runtime directories
+    userdel khajapos 2>/dev/null || true
+    groupdel khajapos 2>/dev/null || true
+    rm -rf /var/lib/khajapos /var/log/khajapos
+
+    # Drop the KhajaPOS database (best effort - only when the server is reachable)
+    DB_CLIENT=$(command -v mariadb || command -v mysql || true)
+    if [ -n "$DB_CLIENT" ]; then
+        "$DB_CLIENT" -uroot -e "DROP DATABASE IF EXISTS \`restaurant_pos\`;" >/dev/null 2>&1 || \
+        "$DB_CLIENT" -h127.0.0.1 -uroot --password='' -e "DROP DATABASE IF EXISTS \`restaurant_pos\`;" >/dev/null 2>&1 || true
+    fi
+    # NOTE: /etc/khajapos (the .env conffile) is removed by dpkg on purge.
+fi
+
+exit 0

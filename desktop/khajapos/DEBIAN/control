@@ -1,0 +1,22 @@
+Package: khajapos
+Version: 2.1.0-1
+Section: web
+Priority: optional
+Architecture: all
+Depends: php-cli | php8.4-cli | php8.2-cli, php-mysql | php8.4-mysql | php8.2-mysql, mariadb-server | mysql-server | default-mysql-server, python3-gi, gir1.2-webkit2-4.1 | gir1.2-webkit2-4.0 | gir1.2-webkit2-3.0
+Recommends: php-sqlite3, php-curl, php-opcache, curl, libnotify-bin
+Maintainer: Ankit Khatri KC <ankitkhatrik6@gmail.com>
+Homepage: https://github.com/ankitkhatrik6/KhajaPOS
+Description: KhajaPOS restaurant point of sale, inventory and billing system
+ KhajaPOS is a production-ready restaurant Point of Sale, stock management and
+ billing platform built with PHP and the Laravel framework. It runs a local web
+ server on port 3000 backed by MariaDB/MySQL and can be used from any device on
+ the local network.
+ .
+ The package provides a NATIVE DESKTOP APPLICATION ("KhajaPOS" in the
+ application menu): a GTK/WebKit window that shows the whole point of sale
+ inside the app itself and starts the local server automatically (no browser
+ needed). A fullscreen "POS Counter" action is also available.
+ After installation the application is available at http://localhost:3000 and
+ is managed with the "khajapos" command (sudo khajapos status|start|stop|...).
+ Default administrator login: admin@khajapos.com / KhajaPOS@123
