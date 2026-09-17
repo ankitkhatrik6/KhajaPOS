@@ -1,0 +1,397 @@
+#!/usr/bin/env python3
+"""
+KhajaPOS Desktop App
+--------------------
+Native desktop window for the KhajaPOS Restaurant POS / Billing system.
+The local server runs entirely on this machine; the whole user interface is
+rendered inside this window (no browser required).
+
+Usage:
+  khajapos-app                Open the desktop app
+  khajapos-app --kiosk        Open fullscreen (ideal for a POS terminal)
+  khajapos-app --browse       Fall back to the default browser
+"""
+
+import os
+import re
+import subprocess
+import sys
+import threading
+import time
+import urllib.error
+import urllib.request
+
+URL = "http://127.0.0.1:3000"
+SERVICE = "khajapos.service"
+ICON_PATHS = (
+    "/usr/share/pixmaps/khajapos.png",
+    "/usr/share/icons/hicolor/512x512/apps/khajapos.png",
+)
+
+POLL_DELAY_MS = 600
+STARTUP_TIMEOUT_S = 90
+
+
+# --------------------------------------------------------------------------
+# Local server helpers
+# --------------------------------------------------------------------------
+def server_up() -> bool:
+    """Return True when the KhajaPOS web server answers on its base URL.
+
+    Any HTTP response (200, 302, 404, ...) proves the server is listening, so
+    a link-check only has to see the socket respond. We do not rely on the
+    framework's "/up" health endpoint here.
+    """
+    try:
+        with urllib.request.urlopen(URL, timeout=2) as resp:
+            return resp.status < 500
+    except urllib.error.HTTPError as err:
+        # A 4xx status is still a live server answering requests.
+        return err.code < 500
+    except Exception:
+        return False
+
+
+def _systemctl_active(unit: str) -> bool:
+    try:
+        return subprocess.run(
+            ["systemctl", "is-active", "--quiet", unit]
+        ).returncode == 0
+    except Exception:
+        return False
+
+
+def _systemctl_start(unit: str) -> bool:
+    """Try as the user, then fall back to a graphical pkexec password prompt."""
+    try:
+        if subprocess.run(
+            ["systemctl", "start", "--quiet", unit], capture_output=True
+        ).returncode == 0:
+            return True
+        return subprocess.run(
+            ["pkexec", "systemctl", "start", "--quiet", unit], capture_output=True
+        ).returncode == 0
+    except Exception:
+        return False
+
+
+def ensure_services() -> None:
+    """Best effort: start the database and the KhajaPOS service if needed."""
+    # 1) Database server (mariadb or mysql)
+    try:
+        units = subprocess.run(
+            ["systemctl", "list-unit-files"], capture_output=True, text=True
+        ).stdout
+    except Exception:
+        units = ""
+    for db in ("mariadb", "mysql"):
+        if db + ".service" in units and not _systemctl_active(db + ".service"):
+            _systemctl_start(db + ".service")
+        if db + ".service" in units:
+            break
+
+    # 2) KhajaPOS application service
+    if not _systemctl_active(SERVICE):
+        _systemctl_start(SERVICE)
+
+
+def wait_for_server(timeout: float = STARTUP_TIMEOUT_S) -> bool:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if server_up():
+            return True
+        time.sleep(1)
+    return server_up()
+
+
+def _safe_markup(label, text):
+    """Set Pango markup on a Gtk.Label, falling back to plain text.
+
+    set_markup raises when the markup string is malformed; we never want a
+    cosmetic label to take the whole app down with it.
+    """
+    try:
+        label.set_markup(text)
+    except Exception:
+        label.set_text(re.sub(r"<[^>]*>", "", text))
+
+
+class _Import:
+    """Lazy GUI imports so the app can fall back to the browser when the
+    WebKit2GTK stack is unavailable."""
+
+    @staticmethod
+    def load():
+        import gi  # noqa: PLC0415
+
+        webkit_major = None
+        for ver in ("4.1", "4.0", "3.0"):
+            try:
+                gi.require_version("WebKit2", ver)
+                webkit_major = ver
+                break
+            except ValueError:
+                continue
+        if webkit_major is None:
+            raise RuntimeError("WebKit2GTK is not available")
+        gi.require_version("Gtk", "3.0")
+        from gi.repository import Gtk, WebKit2  # noqa: PLC0415
+
+        return Gtk, WebKit2
+# --------------------------------------------------------------------------
+# Desktop window
+# --------------------------------------------------------------------------
+def run_gui() -> int:
+    Gtk, WebKit2 = _Import.load()
+
+    from gi.repository import Gdk, GdkPixbuf, GLib  # noqa: PLC0415
+
+    open_in_browser = _open_in_browser  # local alias used by the window code
+
+    class KhajaPOSWindow(Gtk.Window):
+        """Main application window: menu bar + embedded KhajaPOS UI."""
+
+        def __init__(self):
+            Gtk.Window.__init__(self, title="KhajaPOS - Restaurant POS")
+            self.set_default_size(1280, 820)
+            self.set_position(Gtk.WindowPosition.CENTER)
+            if "--kiosk" in sys.argv or "-k" in sys.argv:
+                self.fullscreen()
+            for icon in ICON_PATHS:
+                if os.path.exists(icon):
+                    try:
+                        self.set_icon_from_file(icon)
+                    except Exception:
+                        pass
+                    break
+
+            vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+            self.add(vbox)
+            vbox.pack_start(self._build_menubar(), False, False, 0)
+
+            self.stack = Gtk.Stack()
+            self.stack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
+            self.stack.set_transition_duration(250)
+            vbox.pack_start(self.stack, True, True, 0)
+
+            self.stack.add_named(self._build_loading(), "loading")
+            self.stack.add_named(self._build_error(), "error")
+            self.stack.set_visible_child_name("loading")
+
+            self.webview = None
+            self._ensure_started = False
+            self._start_check = time.monotonic()
+
+            self._build_accelerators()
+            self.connect("destroy", Gtk.main_quit)
+            self.show_all()
+            GLib.timeout_add(POLL_DELAY_MS, self._poll_startup)
+
+        # ------------------------------------------------------------ helpers
+        def _build_accelerators(self):
+            from gi.repository import Gdk as _gdk  # noqa: PLC0415
+
+            self.accel_group = Gtk.AccelGroup()
+            self.add_accel_group(self.accel_group)
+            ctrl = _gdk.ModifierType.CONTROL_MASK
+            for keyval, mod, action in (
+                (_gdk.KEY_r, ctrl, lambda *_: self._reload()),
+                (_gdk.KEY_b, ctrl, lambda *_: open_in_browser()),
+                (_gdk.KEY_q, ctrl, lambda *_: Gtk.main_quit()),
+                (_gdk.KEY_F11, 0, lambda *_: self.toggle_fullscreen()),
+                (_gdk.KEY_plus, 0, lambda *_: self._zoom(1)),
+                (_gdk.KEY_minus, 0, lambda *_: self._zoom(-1)),
+            ):
+                self.accel_group.connect(
+                    keyval, mod, Gtk.AccelFlags.VISIBLE, action
+                )
+
+        def _build_menubar(self):
+            def submenu(label, entries):
+                menu = Gtk.Menu()
+                root = Gtk.MenuItem.new_with_label(label)
+                root.set_submenu(menu)
+                for text, callback in entries:
+                    mi = Gtk.MenuItem.new_with_label(text)
+                    mi.connect("activate", callback)
+                    menu.append(mi)
+                return root
+
+            mb = Gtk.MenuBar()
+            mb.append(submenu("_File", [
+                ("Reload", lambda *_: self._reload()),
+                ("Open in Browser", lambda *_: open_in_browser()),
+                ("Quit", lambda *_: Gtk.main_quit()),
+            ]))
+            mb.append(submenu("_View", [
+                ("Fullscreen", lambda *_: self.toggle_fullscreen()),
+                ("Zoom In", lambda *_: self._zoom(1)),
+                ("Zoom Out", lambda *_: self._zoom(-1)),
+            ]))
+            mb.append(submenu("_Help", [
+                ("About KhajaPOS", lambda *_: self._about()),
+            ]))
+            return mb
+# ------------------------------------------------------------ screens
+        def _build_loading(self):
+            box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+            box.set_valign(Gtk.Align.CENTER)
+            box.set_halign(Gtk.Align.CENTER)
+            spinner = Gtk.Spinner()
+            spinner.set_size_request(56, 56)
+            spinner.start()
+            title = Gtk.Label()
+            _safe_markup(title, '<span size="xx-large" weight="bold">KhajaPOS</span>')
+            self.loading_label = Gtk.Label()
+            _safe_markup(
+                self.loading_label,
+                "Starting the KhajaPOS local server on this machine...\n"
+                '<span size="small">Your point of sale opens here in a '
+                "moment.</span>",
+            )
+            box.pack_start(spinner, False, False, 0)
+            box.pack_start(title, False, False, 0)
+            box.pack_start(self.loading_label, False, False, 0)
+            return box
+
+        def _build_error(self):
+            box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+            box.set_valign(Gtk.Align.CENTER)
+            box.set_halign(Gtk.Align.CENTER)
+            label = Gtk.Label()
+            _safe_markup(
+                label,
+                '<span size="large" weight="bold">KhajaPOS could not be '
+                "started.</span>\n\n"
+                "The local server did not answer. Check the status with:\n"
+                '<span size="small" font_family="monospace">sudo khajapos '
+                "doctor</span>",
+            )
+            box.pack_start(label, False, False, 0)
+            buttons = Gtk.Box(spacing=10)
+            retry = Gtk.Button.new_with_label("Retry")
+            retry.connect("clicked", lambda *_: self._retry_clicked())
+            browse = Gtk.Button.new_with_label("Open in Browser")
+            browse.connect("clicked", lambda *_: open_in_browser())
+            buttons.pack_start(retry, False, False, 0)
+            buttons.pack_start(browse, False, False, 0)
+            box.pack_start(buttons, False, False, 0)
+            return box
+
+        # ------------------------------------------------------------ logic
+        def _poll_startup(self):
+            if server_up():
+                self._load_app()
+                return False
+            if not self._ensure_started and time.monotonic() - self._start_check > 2:
+                self._ensure_started = True
+                threading.Thread(target=ensure_services, daemon=True).start()
+            if time.monotonic() - self._start_check > STARTUP_TIMEOUT_S:
+                self.stack.set_visible_child_name("error")
+                return False
+            self.loading_label.set_text(
+                "Starting the KhajaPOS local server...\n"
+                "(a one-time password prompt may appear)"
+            )
+            return True
+
+        def _retry_clicked(self):
+            self._ensure_started = False
+            self._start_check = time.monotonic()
+            self.stack.set_visible_child_name("loading")
+            self.loading_label.set_text("Retrying... please wait.")
+            GLib.timeout_add(POLL_DELAY_MS, self._poll_startup)
+
+        def _load_app(self):
+            if self.webview is not None:
+                GLib.idle_add(self.stack.set_visible_child_name, "app")
+                self.webview.reload()
+                return
+            web = WebKit2.WebView()
+            web.get_settings().set_property("enable-developer-extras", False)
+            web.connect("load-failed", self._on_load_failed)
+            web.load_uri(URL)
+            self.webview = web
+            self.stack.add_named(web, "app")
+            web.show()
+            self.stack.set_visible_child_name("app")
+
+        def _on_load_failed(self, *_args):
+            if self.webview is not None:
+                self.stack.set_visible_child_name("error")
+
+        def _reload(self):
+            if self.webview is not None:
+                self.webview.reload()
+
+        def _zoom(self, direction):
+            if self.webview is not None:
+                self.webview.set_zoom_level(
+                    self.webview.get_zoom_level() + 0.15 * direction
+                )
+
+        def toggle_fullscreen(self):
+            if self.get_window().get_state() & Gdk.WindowState.FULLSCREEN:
+                self.unfullscreen()
+            else:
+                self.fullscreen()
+
+        def _about(self):
+            dlg = Gtk.AboutDialog()
+            dlg.set_program_name("KhajaPOS")
+            dlg.set_version("2.1.0")
+            dlg.set_comments(
+                "Restaurant Point of Sale, Inventory and Billing System.\n"
+                "Runs as a local server at http://localhost:3000"
+            )
+            for icon in ICON_PATHS:
+                if os.path.exists(icon):
+                    try:
+                        dlg.set_logo(GdkPixbuf.Pixbuf.new_from_file(icon))
+                    except Exception:
+                        pass
+                    break
+            dlg.set_license_type(Gtk.License.MIT_X11)
+            dlg.run()
+            dlg.destroy()
+# Build and show the main window, then run the GTK main loop.  The loop
+    # keeps the application open until the user closes it (Quit / Ctrl+Q /
+    # Alt+F4); _poll_startup() drives the startup sequence from the loop.
+    KhajaPOSWindow()
+    Gtk.main()
+    return 0
+
+
+# --------------------------------------------------------------------------
+# Entry point
+# --------------------------------------------------------------------------
+def _open_in_browser():
+    for browser in ("xdg-open", "sensible-browser", "x-www-browser"):
+        if subprocess.run(["sh", "-c", "command -v %s >/dev/null 2>&1" % browser],
+                          capture_output=True).returncode == 0:
+            subprocess.Popen([browser, URL])
+            return
+    print("KhajaPOS is ready at %s" % URL)
+
+
+def main() -> int:
+    args = sys.argv[1:]
+    if "--help" in args or "-h" in args:
+        print(__doc__)
+        return 0
+
+    # The window needs the GTK/WebKit2 stack; otherwise use the browser.
+    try:
+        return run_gui()
+    except Exception as exc:  # noqa: BLE001 - degraded mode is intended
+        print(
+            "KhajaPOS desktop window could not start (%s).\n"
+            "Opening the default browser instead..." % exc,
+            file=sys.stderr,
+        )
+        _open_in_browser()
+        return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,195 @@
+#!/bin/bash
+# KhajaPOS - control command for the KhajaPOS Debian package
+# Usage: khajapos {open|app|status|start|stop|restart|enable|disable|url|config|logs|backup|restore|doctor}
+set -euo pipefail
+
+APP_DIR=/opt/khajapos
+CONF_DIR=/etc/khajapos
+SERVICE=khajapos.service
+LOG_FILE=/var/log/khajapos/khajapos.log
+DB_NAME=restaurant_pos
+DB_USER=pos_user
+DB_CLIENT=$(command -v mariadb || command -v mysql || true)
+[ -z "$DB_CLIENT" ] && [ -x /opt/lampp/bin/mysql ] && DB_CLIENT=/opt/lampp/bin/mysql
+
+need_root() {
+    [ "$(id -u)" = "0" ] || { echo "khajapos: '$1' requires root - try: sudo khajapos $1" >&2; exit 1; }
+}
+
+app_url() {
+    local ip
+    ip=$(hostname -I 2>/dev/null | awk '{print $1}')
+    [ -n "$ip" ] && echo "http://$ip:3000"
+}
+
+env_get() {
+    sed -n "s/^$1=//p" "$CONF_DIR/.env" 2>/dev/null | head -1
+}
+
+case "${1:-help}" in
+
+    status)
+        systemctl status "$SERVICE" --no-pager 2>&1 || true
+        ;;
+
+    start|stop|restart|enable|disable)
+        need_root "$1"
+        systemctl "$1" "$SERVICE"
+        ;;
+
+    app|win)
+        # Launch the native KhajaPOS desktop window (GTK + WebKit2GTK).
+        # Extra arguments (e.g. --kiosk) are passed through.
+        exec /usr/bin/khajapos-app "${@:2}"
+        ;;
+
+    open|desktop)
+        # Desktop launcher: start the local server if needed, then open the dashboard.
+        URL="http://localhost:3000"
+        notify() {
+            command -v notify-send >/dev/null 2>&1 \
+                && notify-send -i khajapos "KhajaPOS" "$1" >/dev/null 2>&1 || true
+        }
+        run_unit() { # $1 = unit name; plain systemctl, then graphical pkexec fallback
+            systemctl is-active "$1" >/dev/null 2>&1 && return 0
+            systemctl --quiet start "$1" 2>/dev/null || pkexec systemctl --quiet start "$1" 2>/dev/null || return 1
+        }
+
+        # 1) Database server (mariadb or mysql)
+        DBSVC=""
+        for s in mariadb mysql; do
+            if systemctl list-unit-files 2>/dev/null | grep -q "^${s}\\.service"; then DBSVC=$s; break; fi
+        done
+        if [ -n "$DBSVC" ]; then
+            run_unit "$DBSVC" || notify "MariaDB/MySQL could not be started."
+        fi
+
+        # 2) KhajaPOS service
+        if ! run_unit "$SERVICE"; then
+            notify "KhajaPOS could not be started. Run: sudo khajapos start"
+            exit 1
+        fi
+
+        # 3) Wait for the web server to answer (probe the base URL,
+        #    not the /up health endpoint which may not exist on the live app)
+        if command -v curl >/dev/null 2>&1; then
+            for _ in $(seq 1 30); do
+                curl -s -o /dev/null --max-time 2 "$URL/" && break
+                sleep 1
+            done
+        fi
+
+        # 4) Open the dashboard in the default browser
+        if command -v xdg-open >/dev/null 2>&1; then
+            xdg-open "$URL" >/dev/null 2>&1 || notify "KhajaPOS is ready at $URL"
+        else
+            notify "KhajaPOS is ready at $URL"
+        fi
+        ;;
+
+    url)
+        echo "This machine : http://localhost:3000"
+        [ -n "$(app_url)" ] && echo "Network      : $(app_url)"
+        echo "Port         : 3000 (change APP_URL + systemd unit to customise)"
+        ;;
+
+    config)
+        need_root config
+        "${VISUAL:-${EDITOR:-nano}}" "$CONF_DIR/.env"
+        install -o khajapos -g khajapos -m 640 "$CONF_DIR/.env" "$APP_DIR/.env"
+        systemctl restart "$SERVICE" >/dev/null 2>&1 || true
+        echo "khajapos: configuration applied and service restarted."
+        ;;
+
+    logs)
+        if [ -f "$LOG_FILE" ]; then
+            tail -n 100 -f "$LOG_FILE"
+        else
+            echo "khajapos: log file not found ($LOG_FILE) - is the service running?" >&2
+            exit 1
+        fi
+        ;;
+
+    backup)
+        need_root backup
+        [ -n "$DB_CLIENT" ] || { echo "khajapos: no mariadb/mysql client found" >&2; exit 1; }
+        mkdir -p /var/lib/khajapos/backups
+        out=/var/lib/khajapos/backups/restaurant_pos-$(date +%Y%m%d-%H%M%S).sql.gz
+        if "$DB_CLIENT" -h127.0.0.1 -u"$DB_USER" -p"$(env_get DB_PASSWORD)" "$DB_NAME" | gzip -9 >"$out"; then
+            chmod 640 "$out"
+            echo "khajapos: backup written to $out"
+        else
+            echo "khajapos: backup FAILED - check credentials in 'sudo khajapos config'" >&2
+            rm -f "$out"
+            exit 1
+        fi
+        ;;
+
+    restore)
+        need_root restore
+        input="${2:-}"
+        [ -f "$input" ] || { echo "usage: khajapos restore <backup.sql.gz | backup.sql>" >&2; exit 1; }
+        [ -n "$DB_CLIENT" ] || { echo "khajapos: no mariadb/mysql client found" >&2; exit 1; }
+        tmp=/tmp/khajapos-restore.sql
+        case "$input" in
+            *.gz) gunzip -c "$input" >"$tmp" ;;
+            *)     cp "$input" "$tmp" ;;
+        esac
+        systemctl stop "$SERVICE" >/dev/null 2>&1 || true
+        "$DB_CLIENT" -h127.0.0.1 -u"$DB_USER" -p"$(env_get DB_PASSWORD)" \
+            -e "DROP DATABASE IF EXISTS \`$DB_NAME\`; CREATE DATABASE \`$DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" \
+            && "$DB_CLIENT" -h127.0.0.1 -u"$DB_USER" -p"$(env_get DB_PASSWORD)" "$DB_NAME" <"$tmp"
+        rm -f "$tmp"
+        systemctl start "$SERVICE" >/dev/null 2>&1 || true
+        echo "khajapos: database restored from $input"
+        ;;
+
+    doctor)
+        need_root doctor
+        ok=1
+        printf '%-40s' "- PHP CLI"
+        if command -v php >/dev/null 2>&1; then echo "OK ($(php --version | head -1))"; else echo "MISSING"; ok=0; fi
+        printf '%-40s' "- MySQL/Pdo driver"
+        if php -r 'exit(class_exists("Pdo\\Mysql") ? 0 : 1);' >/dev/null 2>&1; then echo "OK"; else echo "MISSING (install php-mysql)"; ok=0; fi
+        printf '%-40s' "- MariaDB/MySQL server"
+        if [ -n "$DB_CLIENT" ] && "$DB_CLIENT" -h127.0.0.1 -u"$DB_USER" -p"$(env_get DB_PASSWORD)" -e 'SELECT 1' >/dev/null 2>&1; then
+            echo "OK (database '$DB_NAME' reachable)"
+        else
+            echo "UNREACHABLE"; ok=0
+        fi
+        printf '%-40s' "- Service (systemd)"
+        if systemctl is-active "$SERVICE" >/dev/null 2>&1; then echo "RUNNING"; else echo "NOT RUNNING"; ok=0; fi
+        printf '%-40s' "- HTTP on :3000"
+        if curl -s -o /dev/null --max-time 3 http://localhost:3000/; then echo "OK (web server responding)"; else echo "NO RESPONSE"; ok=0; fi
+        [ "$ok" -eq 1 ] && echo "khajapos: all checks passed." || echo "khajapos: fix the issues above, then: sudo khajapos restart"
+        ;;
+
+    help|--help|-h|"")
+        cat <<'EOF'
+KhajaPOS - Restaurant POS & Billing System (local server)
+
+USAGE
+  khajapos app [--kiosk]         Open the KhajaPOS desktop window
+                                (kiosk = fullscreen, ideal for a POS counter)
+  khajapos open                  Start the local server and open the dashboard
+                                in the default browser
+  khajapos status                Show service status
+  khajapos start|stop|restart    Control the application service (root)
+  khajapos enable|disable        Start on boot / stop starting on boot (root)
+  khajapos url                   Show the access URL(s) and port
+  khajapos config                Edit /etc/khajapos/.env (root)
+  khajapos logs                  Follow the application log
+  khajapos backup                Dump the database to /var/lib/khajapos/backups (root)
+  khajapos restore FILE          Restore a database backup (root)
+  khajapos doctor                Diagnose PHP, database and service (root)
+
+DEFAULT ADMIN ACCOUNT
+  http://localhost:3000  ->  admin@khajapos.com / KhajaPOS@123
+EOF
+        ;;
+
+    *)
+        echo "khajapos: unknown command '$1' - try 'khajapos help'" >&2
+        exit 1
+        ;;
+esac

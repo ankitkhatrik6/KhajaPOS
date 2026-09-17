@@ -1,0 +1,27 @@
+[Unit]
+Description=KhajaPOS - Restaurant Point of Sale and Billing System
+Documentation=file:///usr/share/doc/khajapos/README.md
+After=network.target mariadb.service mysql.service
+Wants=mariadb.service mysql.service
+
+[Service]
+Type=simple
+User=khajapos
+Group=khajapos
+WorkingDirectory=/opt/khajapos
+Environment=HOME=/var/lib/khajapos
+ExecStart=/usr/bin/php artisan serve --host=0.0.0.0 --port=3000 --no-reload
+Restart=on-failure
+RestartSec=3
+TimeoutStartSec=90
+UMask=0027
+StandardOutput=append:/var/log/khajapos/khajapos.log
+StandardError=append:/var/log/khajapos/khajapos.log
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/khajapos/storage /opt/khajapos/bootstrap/cache /var/lib/khajapos /var/log/khajapos
+
+[Install]
+WantedBy=multi-user.target
