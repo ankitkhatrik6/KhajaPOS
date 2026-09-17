@@ -9,6 +9,7 @@
 [![PHP](https://img.shields.io/badge/PHP-8.2-7c3aed)](composer.json)
 [![Laravel](https://img.shields.io/badge/Framework-Laravel%2012-4b0082)](composer.json)
 [![Database](https://img.shields.io/badge/Database-MySQL%2FMariaDB-00758f)](config/database.php)
+[![Download](https://img.shields.io/badge/Download-Linux%20(.deb)-2ea043)](https://github.com/ankitkhatrik6/KhajaPOS/releases)
 [![License](https://img.shields.io/badge/License-MIT-brightgreen)](LICENSE)
 [![Status](https://img.shields.io/badge/Status-Active-2ea043)](routes/web.php)
 
@@ -19,6 +20,18 @@
 KhajaPOS is a production-ready restaurant point of sale, stock management and billing platform built with PHP and the Laravel framework. It is designed for real-world restaurants and cafes that need a fast cash counter, an accurate inventory ledger and clean VAT-compliant receipts all in one place.
 
 The system runs entirely on MySQL or MariaDB and is served by PHP, which makes it an excellent fit for local deployment with XAMPP on a single machine or across a small office network. All transactions are recorded in NPR and every sale automatically deducts stock in real time.
+
+## Two versions — Web & Desktop App
+
+KhajaPOS runs in **two separate versions** of the same application so you can pick the one that fits your counter:
+
+| Version | Where it runs | Best for |
+| ------- | ------------- | -------- |
+| 🌐 **Web (Browser)** | Your web browser via `php artisan serve` + MySQL/MariaDB | Developers and existing PHP/MySQL (XAMPP) setups |
+| 🖥 **Desktop App (Linux)** | A native GTK/WebKit desktop window + a local server | POS counters — one command installs everything |
+
+- **Web version** → the repository root below ([Web (Browser) Version](#web-browser-version)); quick start with `./run-web.sh`.
+- **Desktop App (Linux)** → [desktop/README.md](desktop/README.md) (download + full setup guide) and the ready-to-install `.deb` package in the [Downloads](#downloads-linux) section.
 
 ## Features
 
@@ -43,7 +56,20 @@ The system runs entirely on MySQL or MariaDB and is served by PHP, which makes i
 | Frontend    | Blade templates, Tailwind CSS, Lucide   |
 | Database    | MySQL or MariaDB                        |
 | Server      | PHP built-in server or XAMPP Apache     |
-| Tooling     | Composer, Git, GitHub Actions (optional)| 
+| Desktop App | GTK3 + WebKit2GTK (Python3), systemd    |
+| Tooling     | Composer, Git, GitHub Actions           |
+
+## Downloads (Linux)
+
+> **Recommended:** install the [**KhajaPOS Desktop App** for Linux](desktop/README.md) — it installs PHP, MariaDB/MySQL and the desktop application automatically on Debian / Ubuntu.
+
+| Platform | Package | Version | Install command |
+| -------- | ------- | ------- | --------------- |
+| 🐧 Debian / Ubuntu | [khajapos_2.1.0-1_all.deb](desktop/khajapos_2.1.0-1_all.deb) | 2.1.0 | `sudo apt install ./khajapos_2.1.0-1_all.deb` |
+| 🐧 Latest build | [GitHub Releases](https://github.com/ankitkhatrik6/KhajaPOS/releases) | latest | download the `.deb` from the release page |
+
+Full Linux download + setup instructions — requirements, install, launch, upgrade, uninstall and troubleshooting:
+**[desktop/README.md](desktop/README.md)**.
 
 ## Screenshots
 
@@ -51,7 +77,11 @@ The system runs entirely on MySQL or MariaDB and is served by PHP, which makes i
 | -------------------- | --------------------- | --------------- |
 | <img src="demo/pos.jpg" alt="POS Billing Terminal" width="300"> | <img src="demo/dash.jpg" alt="Operational Dashboard" width="300"> | <img src="demo/menu.jpg" alt="Menu Management" width="300"> |
 
-## Getting Started
+## Web (Browser) Version
+
+Run the full POS in any web browser. This is the developer / local-server
+version; the only requirements are PHP and MySQL or MariaDB (XAMPP on Linux
+works great).
 
 ### Prerequisites
 
@@ -93,6 +123,9 @@ The system runs entirely on MySQL or MariaDB and is served by PHP, which makes i
 6. Start the development server:
 
    ```bash
+   ./run-web.sh                   # XAMPP: starts MySQL + the web server on :3000
+   # or manually:
+   sudo /opt/lampp/lampp startmysql
    php artisan serve --host=0.0.0.0 --port=3000
    ```
 
@@ -102,7 +135,7 @@ The system runs entirely on MySQL or MariaDB and is served by PHP, which makes i
    http://localhost:3000
    ```
 
-## Default Accounts
+### Default Accounts
 
 The database seeder creates a single administrator account (roles for Cashier and Stock Manager can be assigned to additional staff from Settings → Staff & Roles):
 
@@ -133,6 +166,21 @@ Any destructive action is restricted to the **Admin** role:
 - **Stock Inventory → Edit → Delete Material** permanently deletes an item and its full stock history.
 - Content blocks with dependants (categories that still have menu/stock items) are rejected to protect historical records.
 
+## Desktop App (Linux)
+
+The **Desktop App** version packages the exact same application into a native
+GTK/WebKit window with a local server. It installs PHP, MariaDB/MySQL, the
+server auto-start and the app menu entry automatically:
+
+```bash
+sudo apt install ./khajapos_2.1.0-1_all.deb
+khajapos app      # or click "KhajaPOS" in the application menu
+```
+
+> Full download, setup, upgrade and troubleshooting guide:
+> **[desktop/README.md](desktop/README.md)**. Build the package yourself with
+> [desktop/build-deb.sh](desktop/build-deb.sh) (see [desktop/BUILD.md](desktop/BUILD.md)).
+
 ## Payments
 
 KhajaPOS supports two payment methods on the POS terminal:
@@ -150,6 +198,9 @@ resources/      Blade views and static assets
 public/         Public files including images and the entry point
 database/       Migrations and seeders
 tests/          Unit and feature tests
+desktop/        Desktop App (Linux) version - .deb package, build scripts and
+                the Linux download & setup guide
+ .github/       GitHub Actions workflows (automatic .deb builds on releases)
 ```
 
 ## Contributing
