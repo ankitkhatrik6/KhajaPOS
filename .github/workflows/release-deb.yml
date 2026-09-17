@@ -1,0 +1,46 @@
+name: Build Linux Desktop App (.deb)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-deb:
+    name: Build khajapos deb package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev rsync desktop-file-utils
+
+      - name: Build the Debian package
+        run: |
+          ./desktop/build-deb.sh
+
+      - name: Verify package
+        run: |
+          dpkg-deb --info desktop/khajapos_*.deb | head -20
+          file desktop/khajapos_*.deb
+
+      - name: Upload .deb as release asset (on tags)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: desktop/khajapos_*.deb
+          generate_release_notes: true
+
+      - name: Upload .deb as workflow artifact (manual runs)
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: khajapos-deb
+          path: desktop/khajapos_*.deb
