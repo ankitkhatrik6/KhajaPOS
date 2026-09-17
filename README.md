@@ -73,9 +73,17 @@ Full Linux download + setup instructions — requirements, install, launch, upgr
 
 ## Screenshots
 
-| POS Billing Terminal | Operational Dashboard | Menu Management |
-| -------------------- | --------------------- | --------------- |
-| <img src="demo/pos.jpg" alt="POS Billing Terminal" width="300"> | <img src="demo/dash.jpg" alt="Operational Dashboard" width="300"> | <img src="demo/menu.jpg" alt="Menu Management" width="300"> |
+### POS Billing Terminal
+
+<img src="demo/pos.jpg" alt="POS Billing Terminal" width="800">
+
+### Operational Dashboard
+
+<img src="demo/dash.jpg" alt="Operational Dashboard" width="800">
+
+### Menu Management
+
+<img src="demo/menu.jpg" alt="Menu Management" width="800">
 
 ## Web (Browser) Version
 
