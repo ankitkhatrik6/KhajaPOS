@@ -1,10 +1,13 @@
 {
   "name": "restaurant-pos",
-  "version": "1.0.0",
+  "version": "2.1.0",
   "private": true,
   "scripts": {
-    "dev": "php artisan serve --host=0.0.0.0 --port=3000",
-    "build": "php artisan --version",
+    "web": "./run-web.sh",
+    "stop": "./stop-web.sh",
+    "serve": "php artisan serve --host=0.0.0.0 --port=3000",
+    "deb": "./desktop/build-deb.sh",
+    "build": "php artisan test",
     "start": "php artisan serve --host=0.0.0.0 --port=3000",
     "lint": "php -l routes/web.php"
   }
