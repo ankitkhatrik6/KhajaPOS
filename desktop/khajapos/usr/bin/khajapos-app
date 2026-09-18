@@ -24,7 +24,7 @@ import urllib.request
 
 URL = "http://127.0.0.1:3000"
 SERVICE = "khajapos.service"
-APP_VERSION = "2.2.0"
+APP_VERSION = "2.2.1"
 ICON_PATHS = (
     "/usr/share/pixmaps/khajapos.png",
     "/usr/share/icons/hicolor/512x512/apps/khajapos.png",

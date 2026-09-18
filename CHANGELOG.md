@@ -4,6 +4,23 @@ All notable changes to KhajaPOS are documented here. The project ships as two
 separate versions: the **Web (Browser)** version (this repository root) and the
 **Desktop App (Linux)** version (the `desktop/` folder).
 
+## [2.2.1] — 2026-09-18
+
+### Fixed
+- **Package upgrade:** the v2.2.0 hot-fix shipped with the same package version
+  (`2.2.0-1`) as the original release, so `sudo apt install ./khajapos_2.2.0-1_all.deb`
+  reported *"khajapos is already the newest version"* and never replaced the
+  installed files. The package is now versioned **`2.2.1-1`** so `apt` performs a
+  real upgrade and the fixed app (scrollable About dialog, working 80 mm/A4
+  printing) is actually installed.
+- If you installed `2.2.0-1` from the release, install `2.2.1-1` — no uninstall
+  or data loss involved; your database and `/etc/khajapos/.env` are kept.
+
+### Changed
+- Desktop package bumped to `2.2.1` (`desktop/khajapos_2.2.1-1_all.deb`); About
+  dialog and docs now report version 2.2.1.
+
+## [2.2.0] — 2026-09-18
 ## [2.2.0] — 2026-09-18
 
 ### Added
