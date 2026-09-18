@@ -4,6 +4,25 @@ All notable changes to KhajaPOS are documented here. The project ships as two
 separate versions: the **Web (Browser)** version (this repository root) and the
 **Desktop App (Linux)** version (the `desktop/` folder).
 
+## [2.2.2] — 2026-09-18
+
+### Fixed
+- **Printing no longer crashes the desktop app.** Clicking *A4 Print* or
+  *80 mm Receipt* (or pressing `Ctrl+P`) closed the whole application on
+  modern WebKitGTK: the app used WebKit's synchronous `PrintOperation
+  .run_dialog()`, which spins a nested GTK main loop while WebKit's `print`
+  signal is still being emitted — that re-entry segfaults the app before any
+  print dialog could appear. Printing now uses WebKit's asynchronous
+  `print_()` API, which shows the very same system print dialog without any
+  nested loop, and print errors are logged instead of being fatal.
+- The `print` signal handler now reuses the print operation WebKit provides
+  (instead of creating a second one) and the `failed` signal is handled, so
+  a printer error (offline, out of paper) shows in the log and keeps the
+  app running.
+
+### Changed
+- Desktop package bumped to `2.2.2` (`desktop/khajapos_2.2.2-1_all.deb`).
+
 ## [2.2.1] — 2026-09-18
 
 ### Fixed

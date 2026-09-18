@@ -24,7 +24,7 @@ import urllib.request
 
 URL = "http://127.0.0.1:3000"
 SERVICE = "khajapos.service"
-APP_VERSION = "2.2.1"
+APP_VERSION = "2.2.2"
 ICON_PATHS = (
     "/usr/share/pixmaps/khajapos.png",
     "/usr/share/icons/hicolor/512x512/apps/khajapos.png",
@@ -452,38 +452,64 @@ def run_gui() -> int:
         def _print_current(self):
             """Print the current page with the system print dialog.
 
-            This is made bullet-proof for real counter printers:
+            Made crash-proof for real counter printers:
 
-            1. The `print` WebKit operation is used when possible: it honours
-               the web templates' `@page`/`@media print` CSS, so A4 invoices
-               print full-page and 80 mm receipts print narrow on thermal
-               printers. Useless browser chrome (app toolbars, URL headers)
-               is left out by default.
-            2. If the GTK print dialog cannot be created (older WebKit2 or a
-               driver problem), we fall back to `Print Invoice / Receipt`
-               through xdg-open ... see file:// fallback below.
+            1. WebKit2GTK's asynchronous `PrintOperation.print_()` is used.
+               The older `run_dialog()` call is synchronous and spins a
+               nested GTK main loop; calling it while a WebKit `print`
+               signal is still being emitted re-enters GTK inside WebKit
+               and segfaults the whole app (WebKitGTK >= 2.4x). `print_()`
+               shows the very same system print dialog but driven by the
+               normal main loop, so nothing is re-entered and the app
+               stays alive.
+            2. The operation honours the web templates' `@page`/
+               `@media print` CSS, so A4 invoices print full-page and
+               80 mm receipts print narrow on thermal printers.
             """
             if self.webview is None:
                 return False
             try:
                 operation = WebKit2.PrintOperation.new(self.webview)
-                # A progress popup is unnecessary noise for one receipt; the
-                # system print dialog already shows its own status.
-                if hasattr(operation, "set_show_progress"):
-                    operation.set_show_progress(False)
-                # WebKit applies the @page/@media print CSS of the templates
-                # automatically, so A4 invoices print full-page and 80 mm
-                # receipts print narrow. No custom print settings are forced
-                # here: forcing them would overrule the thermal page size and
-                # printer the user picks in the dialog below.
-                parent = self if self.get_visible() else None
-                try:
-                    operation.run_dialog(parent)
-                except Exception:
-                    operation.run_dialog(None)
+                self._start_print_operation(operation)
             except Exception as exc:
-                print("KhajaPOS: printing failed - %s" % exc, file=sys.stderr)
+                print(
+                    "KhajaPOS: printing failed - %s" % exc, file=sys.stderr
+                )
                 return self._print_browser_fallback()
+            return False
+
+        def _start_print_operation(self, operation):
+            """Run one WebKit print operation asynchronously.
+
+            `print_()` presents the GTK print dialog and continues
+            (printing, progress) entirely inside the regular GTK main
+            loop. Errors are reported through the `failed` signal, which
+            we log instead of crashing on.
+            """
+            try:
+                if hasattr(operation, "set_show_progress"):
+                    try:
+                        operation.set_show_progress(True)
+                    except Exception:
+                        pass
+                operation.connect("failed", self._on_print_failed)
+                operation.print_()
+            except Exception as exc:
+                print(
+                    "KhajaPOS: could not start printing - %s" % exc,
+                    file=sys.stderr,
+                )
+                self._print_browser_fallback()
+
+        def _on_print_failed(self, operation, error):
+            """Log print errors instead of letting them take the app down."""
+            try:
+                message = error.message if hasattr(error, "message") else error
+            except Exception:
+                message = error
+            print(
+                "KhajaPOS: print job failed - %s" % message, file=sys.stderr
+            )
             return False
 
         def _print_browser_fallback(self):
@@ -771,15 +797,16 @@ def run_gui() -> int:
         def _on_web_print(self, webview, print_operation):
             """Handle WebKit's native print signal (window.print() path).
 
-            The print plugin-less WebKit2GTK raises `print` on the WebView
-            when the page calls window.print(). Returning True consumes the
-            native (often broken/empty) flow and routes A4 + 80 mm pages
-            through the tested desktop print dialog instead.
+            The page's window.print() (A4 invoice / 80 mm receipt buttons)
+            lands here with the print operation WebKit already created for
+            this job. We start it asynchronously — creating a second
+            operation or calling the synchronous run_dialog() here would
+            re-enter GTK inside WebKit's signal emission and crash the app
+            on modern WebKitGTK. Returning True consumes WebKit's default
+            (often broken) handling.
             """
             try:
-                if not self._pending_print:
-                    self._pending_print = True
-                    GLib.idle_add(self._run_pending_print)
+                self._start_print_operation(print_operation)
             except Exception:
                 pass
             return True

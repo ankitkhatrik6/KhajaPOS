@@ -6,8 +6,8 @@
 
 ### Restaurant Point of Sale, Inventory and Billing System
 
-[![Debian](https://img.shields.io/badge/Package-.deb-2ea043?style=flat-square&logo=debian&logoColor=white)](khajapos_2.2.1-1_all.deb)
-[![Version](https://img.shields.io/badge/Version-2.2.1-7c3aed?style=flat-square)](khajapos_2.2.1-1_all.deb)
+[![Debian](https://img.shields.io/badge/Package-.deb-2ea043?style=flat-square&logo=debian&logoColor=white)](khajapos_2.2.2-1_all.deb)
+[![Version](https://img.shields.io/badge/Version-2.2.2-7c3aed?style=flat-square)](khajapos_2.2.2-1_all.deb)
 [![PHP](https://img.shields.io/badge/PHP-8.2-166534?style=flat-square&logo=php&logoColor=white)](../composer.json)
 [![Laravel](https://img.shields.io/badge/Laravel-12-ff2d20?style=flat-square&logo=laravel&logoColor=white)](../composer.json)
 [![MariaDB](https://img.shields.io/badge/MariaDB-11.8-003545?style=flat-square&logo=mariadb&logoColor=white)](https://mariadb.org/)
@@ -84,10 +84,10 @@ connection.
 Download the latest `.deb` installer from the
 [KhajaPOS GitHub Releases page](https://github.com/ankitkhatrik6/KhajaPOS/releases).
 
-For version **2.2.1**:
+For version **2.2.2**:
 
 ```text
-khajapos_2.2.1-1_all.deb
+khajapos_2.2.2-1_all.deb
 ```
 
 Save the package in:
@@ -99,13 +99,13 @@ Save the package in:
 Verify that it exists:
 
 ```bash
-ls -lh ~/Downloads/khajapos_2.2.1-1_all.deb
+ls -lh ~/Downloads/khajapos_2.2.2-1_all.deb
 ```
 
 Optional checksum verification:
 
 ```bash
-sha256sum ~/Downloads/khajapos_2.2.1-1_all.deb
+sha256sum ~/Downloads/khajapos_2.2.2-1_all.deb
 ```
 
 ---
@@ -148,7 +148,7 @@ cd ~/Downloads
 Install the package:
 
 ```bash
-sudo apt install ./khajapos_2.2.1-1_all.deb
+sudo apt install ./khajapos_2.2.2-1_all.deb
 ```
 
 Using `apt` is recommended because it automatically resolves required
@@ -1305,7 +1305,7 @@ For an experienced user, the complete installation is:
 
 ```bash
 cd ~/Downloads
-sudo apt install ./khajapos_2.2.1-1_all.deb
+sudo apt install ./khajapos_2.2.2-1_all.deb
 ```
 
 Verify:
