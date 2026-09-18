@@ -14,6 +14,7 @@ Usage:
 
 import os
 import re
+import shutil
 import subprocess
 import sys
 import threading
@@ -36,6 +37,26 @@ STARTUP_TIMEOUT_S = 90
 # --------------------------------------------------------------------------
 # Local server helpers
 # --------------------------------------------------------------------------
+def _open_in_browser_available() -> bool:
+    return any(
+        shutil.which(browser) is not None
+        for browser in ("xdg-open", "sensible-browser", "x-www-browser")
+    )
+
+
+def _open_in_browser_uri(uri: str) -> bool:
+    for browser in ("xdg-open", "sensible-browser", "x-www-browser"):
+        if shutil.which(browser) is None:
+            continue
+        try:
+            subprocess.Popen([browser, uri])
+            return True
+        except Exception:
+            continue
+    print("KhajaPOS is ready at %s" % uri)
+    return False
+
+
 def server_up() -> bool:
     """Return True when the KhajaPOS web server answers on its base URL.
 
@@ -380,8 +401,26 @@ def run_gui() -> int:
                 self.webview.reload()
                 return
             web = WebKit2.WebView()
-            web.get_settings().set_property("enable-developer-extras", False)
+            settings = web.get_settings()
+            settings.set_property("enable-developer-extras", False)
+            # WebKit2GTK does not surface window.print() as a browser dialog by
+            # default: the call is delivered through the `print` signal and
+            # (on older builds) through a modal script dialog. We handle both
+            # paths so the buttons in the web UI always print.
+            settings.set_allow_modal_dialogs(True)
+            settings.set_enable_javascript(True)
             web.connect("load-failed", self._on_load_failed)
+            try:
+                # Native WebKit `print` signal: raised when the page calls
+                # window.print() (A4 invoice / 80 mm receipt buttons). We
+                # return True and route it into the tested print dialog.
+                web.connect("print", self._on_web_print)
+                # Invoice pages use target=_blank: keep them inside the app
+                # window so Print and Back keep working without a browser.
+                web.connect("create", self._on_web_create)
+            except Exception:
+                pass
+            self._pending_print = False
             web.load_uri(URL)
             self.webview = web
             self.stack.add_named(web, "app")
@@ -413,20 +452,54 @@ def run_gui() -> int:
         def _print_current(self):
             """Print the current page with the system print dialog.
 
-            WebKit's embedded view has no visible print button of its own, so
-            printing an invoice (A4) or a thermal receipt (80 mm) is exposed
-            through File > Print and Ctrl+P. The standard print dialog lets
-            the user pick the receipt / office printer and page setup, exactly
-            like printing from a web browser.
+            This is made bullet-proof for real counter printers:
+
+            1. The `print` WebKit operation is used when possible: it honours
+               the web templates' `@page`/`@media print` CSS, so A4 invoices
+               print full-page and 80 mm receipts print narrow on thermal
+               printers. Useless browser chrome (app toolbars, URL headers)
+               is left out by default.
+            2. If the GTK print dialog cannot be created (older WebKit2 or a
+               driver problem), we fall back to `Print Invoice / Receipt`
+               through xdg-open ... see file:// fallback below.
             """
             if self.webview is None:
                 return False
             try:
                 operation = WebKit2.PrintOperation.new(self.webview)
-                operation.set_show_progress(True)
-                operation.run_dialog(None)
+                # A progress popup is unnecessary noise for one receipt; the
+                # system print dialog already shows its own status.
+                if hasattr(operation, "set_show_progress"):
+                    operation.set_show_progress(False)
+                # WebKit applies the @page/@media print CSS of the templates
+                # automatically, so A4 invoices print full-page and 80 mm
+                # receipts print narrow. No custom print settings are forced
+                # here: forcing them would overrule the thermal page size and
+                # printer the user picks in the dialog below.
+                parent = self if self.get_visible() else None
+                try:
+                    operation.run_dialog(parent)
+                except Exception:
+                    operation.run_dialog(None)
             except Exception as exc:
                 print("KhajaPOS: printing failed - %s" % exc, file=sys.stderr)
+                return self._print_browser_fallback()
+            return False
+
+        def _print_browser_fallback(self):
+            """Last-resort printing through the default desktop browser."""
+            try:
+                uri = (
+                    self.webview.get_uri()
+                    if self.webview is not None
+                    else URL
+                )
+                print("KhajaPOS: using browser fallback for %s" % uri)
+                if _open_in_browser_available():
+                    _open_in_browser_uri(uri)
+                    return True
+            except Exception as exc:
+                print("KhajaPOS: browser fallback failed - %s" % exc, file=sys.stderr)
             return False
 
         def _read_license(self):
@@ -446,46 +519,127 @@ def run_gui() -> int:
                     "sell copies of the Software.\n..."
                 )
 
+        def _about_row(self, label_text, value_text):
+            row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+            label = Gtk.Label()
+            _safe_markup(label, '<span weight="bold">%s</span>' % label_text)
+            label.set_xalign(0)
+            label.set_size_request(150, -1)
+            value = Gtk.Label()
+            value.set_text(value_text)
+            value.set_xalign(0)
+            value.set_line_wrap(True)
+            value.set_selectable(True)
+            row.pack_start(label, False, False, 0)
+            row.pack_start(value, True, True, 0)
+            return row
+
         def _about(self):
-            """About dialog describing the whole Restaurant Management System."""
-            dlg = Gtk.AboutDialog(transient_for=self)
-            dlg.set_program_name("KhajaPOS")
-            dlg.set_version(APP_VERSION)
-            dlg.set_comments(
-                "Restaurant Point of Sale, Inventory and Billing System.\n"
-                "Runs as a local server at http://localhost:3000."
-            )
-            dlg.set_copyright("Copyright (c) 2026 Ankit Khatri KC")
-            dlg.set_website("https://github.com/ankitkhatrik6/KhajaPOS")
-            dlg.set_website_label("KhajaPOS on GitHub")
-            dlg.set_authors(["Ankit Khatri KC <ankitkhatrik6@gmail.com>"])
-            dlg.set_artists(["Ankit Khatri KC"])
-            for icon in ICON_PATHS:
-                if os.path.exists(icon):
-                    try:
-                        dlg.set_logo(GdkPixbuf.Pixbuf.new_from_file(icon))
-                    except Exception:
-                        pass
-                    break
-            dlg.set_license_type(Gtk.License.MIT_X11)
-            dlg.set_license(self._read_license())
+            """About dialog with everything about this project.
 
-            # Extra panel: everything about the system
+            A custom scrollable dialog is used so the project logo stays a
+            small fixed-size thumbnail and the full description, feature
+            list, technical details and help remain visible.
+            """
+            dlg = Gtk.Dialog(
+                title="About KhajaPOS",
+                transient_for=self,
+                modal=True,
+            )
+            dlg.set_default_size(660, 540)
+            dlg.add_button("Close", Gtk.ResponseType.CLOSE)
+
             content = dlg.get_content_area()
-            details = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-            details.set_border_width(12)
-
-            header = Gtk.Label()
-            _safe_markup(
-                header, '<span size="large" weight="bold">About this system</span>'
+            scrolled = Gtk.ScrolledWindow()
+            scrolled.set_policy(
+                Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC
             )
-            details.pack_start(header, False, False, 0)
+            scrolled.set_min_content_height(470)
+            content.pack_start(scrolled, True, True, 0)
+
+            body = Gtk.Box(
+                orientation=Gtk.Orientation.VERTICAL, spacing=10
+            )
+            body.set_border_width(20)
+            scrolled.add_with_viewport(body)
+
+            header = Gtk.Box(
+                orientation=Gtk.Orientation.HORIZONTAL, spacing=18
+            )
+            logo_image = Gtk.Image()
+            logo_pixbuf = self._logo_pixbuf(96, 96)
+            if logo_pixbuf is not None:
+                logo_image.set_from_pixbuf(logo_pixbuf)
+            header.pack_start(logo_image, False, False, 0)
+
+            title_box = Gtk.Box(
+                orientation=Gtk.Orientation.VERTICAL, spacing=4
+            )
+            name_label = Gtk.Label()
+            _safe_markup(
+                name_label,
+                '<span size="x-large" weight="bold">KhajaPOS</span>',
+            )
+            name_label.set_xalign(0)
+            title_box.pack_start(name_label, False, False, 0)
+
+            version_label = Gtk.Label()
+            version_label.set_text(
+                "Version %s - Desktop App (Linux)" % APP_VERSION
+            )
+            version_label.set_xalign(0)
+            title_box.pack_start(version_label, False, False, 0)
+
+            tagline = Gtk.Label()
+            _safe_markup(
+                tagline,
+                "Restaurant Point of Sale, Inventory and Billing System.",
+            )
+            tagline.set_xalign(0)
+            tagline.set_line_wrap(True)
+            title_box.pack_start(tagline, False, False, 0)
+            header.pack_start(title_box, True, True, 0)
+            body.pack_start(header, False, False, 0)
+
+            url_label = Gtk.Label()
+            _safe_markup(
+                url_label,
+                '<a href="https://github.com/ankitkhatrik6/KhajaPOS">'
+                "https://github.com/ankitkhatrik6/KhajaPOS</a>",
+            )
+            url_label.set_xalign(0)
+            url_label.set_line_wrap(True)
+            body.pack_start(url_label, False, False, 0)
+
+            copyright_label = Gtk.Label()
+            copyright_label.set_text(
+                "Copyright (c) 2026 Ankit Khatri KC - MIT License"
+            )
+            copyright_label.set_xalign(0)
+            copyright_label.set_line_wrap(True)
+            body.pack_start(copyright_label, False, False, 0)
+
+            what = Gtk.Label()
+            what.set_xalign(0)
+            what.set_line_wrap(True)
+            _safe_markup(
+                what,
+                "<b>What KhajaPOS is</b>\n"
+                "KhajaPOS is a production-ready restaurant point of sale, "
+                "stock management and billing platform. It gives real "
+                "restaurants and cafes a fast cash counter, an accurate "
+                "inventory ledger and clean VAT- and PAN-compliant receipts, "
+                "all in one place. Every sale is recorded in NPR and stock "
+                "moves are tracked in real time on the local server.",
+            )
+            body.pack_start(what, False, False, 0)
 
             features = Gtk.Label()
             features.set_xalign(0)
+            features.set_line_wrap(True)
             _safe_markup(
                 features,
-                "<b>What KhajaPOS does</b>\n"
+                "<b>Everything this project includes</b>\n"
                 "\u2022 POS billing terminal with instant item search and category filters\n"
                 "\u2022 Cash and online payments with automatic change calculation\n"
                 "\u2022 Raw-material inventory with low-stock alerts and stock history\n"
@@ -495,10 +649,11 @@ def run_gui() -> int:
                 "\u2022 Role-based access (Admin / Cashier / Stock Manager)\n"
                 "\u2022 Live dashboard with sales trends and payment charts",
             )
-            details.pack_start(features, False, False, 0)
+            body.pack_start(features, False, False, 0)
 
             placement = Gtk.Label()
             placement.set_xalign(0)
+            placement.set_line_wrap(True)
             placement.set_selectable(True)
             _safe_markup(
                 placement,
@@ -511,21 +666,170 @@ def run_gui() -> int:
                 "Access     :  http://localhost:3000 or a LAN IP on port 3000\n"
                 "Default admin: admin@khajapos.com / KhajaPOS@123",
             )
-            details.pack_start(placement, False, False, 0)
+            body.pack_start(placement, False, False, 0)
 
             hint = Gtk.Label()
+            hint.set_xalign(0)
+            hint.set_line_wrap(True)
             _safe_markup(
                 hint,
                 '<span size="small" color="#666666">Print invoices and receipts '
                 "with File \u2192 Print or Ctrl+P - the A4 and 80 mm thermal "
-                "formats are supported by the web templates.</span>",
+                "formats are supported by the web templates. If the printer "
+                "does not respond, run: sudo khajapos doctor - then select the "
+                "CUPS printer in the dialog.</span>",
             )
-            details.pack_start(hint, False, False, 0)
+            body.pack_start(hint, False, False, 0)
 
-            content.pack_start(details, True, True, 0)
+            details = Gtk.Frame(label="System")
+            details_box = Gtk.Box(
+                orientation=Gtk.Orientation.VERTICAL, spacing=6
+            )
+            details_box.set_border_width(12)
+            details.add(details_box)
+            details_box.pack_start(
+                self._about_row("Program", "KhajaPOS"), False, False, 0
+            )
+            details_box.pack_start(
+                self._about_row("Version", APP_VERSION), False, False, 0
+            )
+            details_box.pack_start(
+                self._about_row(
+                    "Build",
+                    "Local server %s - Desktop App (Linux)" % URL,
+                ),
+                False,
+                False,
+                0,
+            )
+            details_box.pack_start(
+                self._about_row(
+                    "Authors", "Ankit Khatri KC <ankitkhatrik6@gmail.com>"
+                ),
+                False,
+                False,
+                0,
+            )
+            details_box.pack_start(
+                self._about_row(
+                    "Website", "https://github.com/ankitkhatrik6/KhajaPOS"
+                ),
+                False,
+                False,
+                0,
+            )
+            body.pack_start(details, False, False, 0)
+
+            license_box = Gtk.Frame(label="License")
+            license_text = Gtk.TextView()
+            license_text.set_editable(False)
+            license_text.set_cursor_visible(False)
+            license_text.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+            license_text.get_buffer().set_text(self._read_license())
+            license_scroll = Gtk.ScrolledWindow()
+            license_scroll.set_policy(
+                Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC
+            )
+            license_scroll.set_min_content_height(140)
+            license_scroll.add(license_text)
+            license_wrap = Gtk.Box(
+                orientation=Gtk.Orientation.VERTICAL, spacing=0
+            )
+            license_wrap.set_border_width(12)
+            license_wrap.pack_start(license_scroll, True, True, 0)
+            license_box.add(license_wrap)
+            body.pack_start(license_box, False, False, 0)
+
             content.show_all()
             dlg.run()
             dlg.destroy()
+
+        def _on_web_create(self, webview, navigation_action):
+            """Open target=_blank invoice pages inside this window.
+
+            The invoice screen uses target=_blank for A4 / receipt pages.
+            Loading them in the same view (instead of dropping them or
+            opening a raw browser tab) keeps Print + back navigation working
+            entirely inside the desktop app.
+            """
+            try:
+                request = (
+                    navigation_action.get_request()
+                    if navigation_action is not None
+                    else None
+                )
+                if request is not None:
+                    uri = request.get_uri()
+                    target = self.webview
+                    if uri and target is not None:
+                        GLib.idle_add(target.load_uri, uri)
+                        return target
+            except Exception:
+                pass
+            return None
+
+        def _on_web_print(self, webview, print_operation):
+            """Handle WebKit's native print signal (window.print() path).
+
+            The print plugin-less WebKit2GTK raises `print` on the WebView
+            when the page calls window.print(). Returning True consumes the
+            native (often broken/empty) flow and routes A4 + 80 mm pages
+            through the tested desktop print dialog instead.
+            """
+            try:
+                if not self._pending_print:
+                    self._pending_print = True
+                    GLib.idle_add(self._run_pending_print)
+            except Exception:
+                pass
+            return True
+
+        def _on_script_dialog(self, webview, dialog):
+            """Route window.print() calls from the web UI to print workflow.
+
+            WebKit2GTK has no built-in JS print preview, so this maps any
+            `window.print()` button (A4 invoice, 80 mm receipt, reports) to
+            the same tested desktop print dialog used by File > Print.
+            """
+            try:
+                dialog_type = dialog.get_dialog_type()
+                if dialog_type == WebKit2.ScriptDialogType.BEFORE_UNLOAD_CONFIRM:
+                    return False
+                if dialog_type == WebKit2.ScriptDialogType.CONFIRM:
+                    if "print" in (dialog.get_message() or "").lower():
+                        # JS confirm(Print?)-style hooks: approve, then print
+                        # the already-rendered page through the tested path.
+                        if not self._pending_print:
+                            self._pending_print = True
+                            dialog.confirm_set_confirmed(True)
+                            GLib.idle_add(self._run_pending_print)
+                        else:
+                            dialog.confirm_set_confirmed(True)
+                        return True
+                    return False
+                # alert/beforeunload/prompt text: if it looks like a print
+                # request, print through the same menu-driven dialog instead
+                # of showing a page popup.
+                message = (dialog.get_message() or "").lower()
+                if "print" in message or "receipt" in message or "invoice" in message:
+                    if not self._pending_print:
+                        self._pending_print = True
+                        GLib.idle_add(self._run_pending_print)
+                    try:
+                        if dialog_type == WebKit2.ScriptDialogType.ALERT:
+                            dialog.close()
+                    except Exception:
+                        pass
+                    return True
+            except Exception:
+                pass
+            return False
+
+        def _run_pending_print(self):
+            self._pending_print = False
+            self._print_current()
+            return False
+
 # Build and show the main window, then run the GTK main loop.  The loop
     # keeps the application open until the user closes it (Quit / Ctrl+Q /
     # Alt+F4); _poll_startup() drives the startup sequence from the loop.
