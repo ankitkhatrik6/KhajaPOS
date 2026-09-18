@@ -6,7 +6,7 @@ This directory contains everything needed to rebuild the KhajaPOS **Desktop App
 The installable package is:
 
 ```
-desktop/khajapos_2.2.2-1_all.deb      (native desktop app + local server)
+desktop/khajapos_2.2.3-1_all.deb      (native desktop app + local server)
 ```
 
 ## Package layout
@@ -61,13 +61,13 @@ This script:
 2. copies the environment template (`desktop/khajapos/etc/khajapos/.env`)
    as `opt/khajapos/.env.package` (the packaged app uses this instead of `.env`)
 3. refreshes the launcher icons from `public/logo.png`
-4. builds `desktop/khajapos_2.2.2-1_all.deb` with root-owned files
+4. builds `desktop/khajapos_2.2.3-1_all.deb` with root-owned files
 
 ### Sanity checks
 
 ```bash
-dpkg-deb --info desktop/khajapos_2.2.2-1_all.deb
-dpkg-deb --contents desktop/khajapos_2.2.2-1_all.deb | head
+dpkg-deb --info desktop/khajapos_2.2.3-1_all.deb
+dpkg-deb --contents desktop/khajapos_2.2.3-1_all.deb | head
 desktop-file-validate desktop/khajapos/usr/share/applications/khajapos.desktop
 python3 -m py_compile desktop/khajapos/usr/bin/khajapos-app
 bash -n desktop/khajapos/DEBIAN/postinst desktop/khajapos/DEBIAN/prerm \
@@ -77,7 +77,7 @@ bash -n desktop/khajapos/DEBIAN/postinst desktop/khajapos/DEBIAN/prerm \
 ## Install / test the build
 
 ```bash
-sudo apt install ./desktop/khajapos_2.2.2-1_all.deb
+sudo apt install ./desktop/khajapos_2.2.3-1_all.deb
 
 # open the desktop app window
 khajapos app

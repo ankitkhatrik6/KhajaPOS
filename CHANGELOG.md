@@ -4,6 +4,31 @@ All notable changes to KhajaPOS are documented here. The project ships as two
 separate versions: the **Web (Browser)** version (this repository root) and the
 **Desktop App (Linux)** version (the `desktop/` folder).
 
+## [2.2.3] — 2026-09-18
+
+### Fixed
+- **App aborted when clicking the invoice print buttons.** The A4 / 80 mm
+  print buttons are `target="_blank"` links, which route through WebKitGTK's
+  new-window machinery; the installed `create` handler returned the
+  already-realized main view and WebKitGTK 2.4x+ aborts in
+  `std::optional<WebCore::WindowFeatures>` handling for such requests
+  (whole-app core dump, no print dialog). The app now keeps those clicks out
+  of the new-window path entirely:
+  - an injected user script rewrites `target="_blank"` clicks into
+    same-view navigation before WebKit sees them (validated: `create` and
+    NEW_WINDOW_ACTION never fire);
+  - `decide-policy` NEW_WINDOW_ACTION requests (JS `window.open()`) are
+    ignored and loaded in the same view as a fallback;
+  - the invalid `create` handler was removed — stray popups fall back to
+    WebKit's safe default (blocked).
+  Print pages now always open inside the app window and their print buttons
+  raise the async system print dialog from the previous fix.
+- Loading-screen markup warning fixed (`Inventory &` → `Inventory &amp;` in
+  the Pango label), the GTK warning at startup is gone.
+
+### Changed
+- Desktop package bumped to `2.2.3` (`desktop/khajapos_2.2.3-1_all.deb`).
+
 ## [2.2.2] — 2026-09-18
 
 ### Fixed

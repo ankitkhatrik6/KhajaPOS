@@ -13,12 +13,12 @@ repository: https://github.com/ankitkhatrik6/KhajaPOS
 Installation
 ------------
 
-Download the latest installer (khajapos_2.2.2-1_all.deb or newer) from the
+Download the latest installer (khajapos_2.2.3-1_all.deb or newer) from the
 GitHub Releases page, then install it:
 
     https://github.com/ankitkhatrik6/KhajaPOS/releases
 
-    sudo apt install ./khajapos_2.2.2-1_all.deb
+    sudo apt install ./khajapos_2.2.3-1_all.deb
 
 The package installs the required dependencies (PHP CLI, PHP MySQL driver,
 MariaDB/MySQL server, GTK + WebKit2GTK), creates a dedicated

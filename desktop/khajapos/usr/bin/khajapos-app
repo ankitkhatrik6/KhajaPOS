@@ -24,7 +24,7 @@ import urllib.request
 
 URL = "http://127.0.0.1:3000"
 SERVICE = "khajapos.service"
-APP_VERSION = "2.2.2"
+APP_VERSION = "2.2.3"
 ICON_PATHS = (
     "/usr/share/pixmaps/khajapos.png",
     "/usr/share/icons/hicolor/512x512/apps/khajapos.png",
@@ -292,7 +292,7 @@ def run_gui() -> int:
             _safe_markup(
                 subtitle,
                 '<span size="medium" color="#7c3aed">Restaurant Point of Sale, '
-                "Inventory & Billing System</span>",
+                "Inventory &amp; Billing System</span>",
             )
 
             self.spinner = Gtk.Spinner()
@@ -400,7 +400,41 @@ def run_gui() -> int:
                 GLib.idle_add(self.stack.set_visible_child_name, "app")
                 self.webview.reload()
                 return
-            web = WebKit2.WebView()
+            # The invoice/receipt print buttons are target=_blank links. On
+            # modern WebKitGTK the new-window machinery (create signal +
+            # WindowFeatures handling) crashes the whole app (empty
+            # std::optional<WebCore::WindowFeatures> assertion), especially
+            # when a handler returns an already-realized view. We therefore
+            # keep such clicks out of that machinery entirely:
+            #   1. a user script rewrites target=_blank clicks into
+            #      same-view navigation before WebKit sees them;
+            #   2. `decide-policy` NEW_WINDOW_ACTION (JS window.open etc.)
+            #      is ignored and loaded in the same view;
+            #   3. NO `create` handler is installed at all - stray popups
+            #      are simply blocked by WebKit's safe default.
+            keep_in_app_js = (
+                "(function(){"
+                "document.addEventListener('click', function(e){"
+                " var el = e.target;"
+                " var a = el && el.closest ? el.closest('a') : null;"
+                " if (a && a.getAttribute('target') === '_blank' && a.href){"
+                " e.preventDefault(); e.stopPropagation();"
+                " window.location.href = a.href;"
+                " }"
+                "}, true);"
+                "})();"
+            )
+            ucm = WebKit2.UserContentManager()
+            ucm.add_script(
+                WebKit2.UserScript(
+                    keep_in_app_js,
+                    WebKit2.UserContentInjectedFrames.ALL_FRAMES,
+                    WebKit2.UserScriptInjectionTime.END,
+                    None,
+                    None,
+                )
+            )
+            web = WebKit2.WebView.new_with_user_content_manager(ucm)
             settings = web.get_settings()
             settings.set_property("enable-developer-extras", False)
             # WebKit2GTK does not surface window.print() as a browser dialog by
@@ -410,14 +444,12 @@ def run_gui() -> int:
             settings.set_allow_modal_dialogs(True)
             settings.set_enable_javascript(True)
             web.connect("load-failed", self._on_load_failed)
+            web.connect("decide-policy", self._on_decide_policy)
             try:
                 # Native WebKit `print` signal: raised when the page calls
                 # window.print() (A4 invoice / 80 mm receipt buttons). We
-                # return True and route it into the tested print dialog.
+                # route it into the async system print dialog.
                 web.connect("print", self._on_web_print)
-                # Invoice pages use target=_blank: keep them inside the app
-                # window so Print and Back keep working without a browser.
-                web.connect("create", self._on_web_create)
             except Exception:
                 pass
             self._pending_print = False
@@ -770,29 +802,33 @@ def run_gui() -> int:
             dlg.run()
             dlg.destroy()
 
-        def _on_web_create(self, webview, navigation_action):
-            """Open target=_blank invoice pages inside this window.
+        def _on_decide_policy(self, webview, decision, decision_type):
+            """Keep new-window requests inside this view.
 
-            The invoice screen uses target=_blank for A4 / receipt pages.
-            Loading them in the same view (instead of dropping them or
-            opening a raw browser tab) keeps Print + back navigation working
-            entirely inside the desktop app.
+            JS `window.open()` and any target=_blank click that slips past
+            the injected user script arrive here as a NEW_WINDOW_ACTION.
+            We ignore WebKit's new-window machinery (whose WindowFeatures
+            handling crashes on modern WebKitGTK) and simply load the
+            target URI in the current view, so A4/receipt pages and their
+            Print buttons stay inside the app.
             """
             try:
-                request = (
-                    navigation_action.get_request()
-                    if navigation_action is not None
-                    else None
-                )
-                if request is not None:
-                    uri = request.get_uri()
-                    target = self.webview
-                    if uri and target is not None:
-                        GLib.idle_add(target.load_uri, uri)
-                        return target
+                if decision_type == WebKit2.PolicyDecisionType.NEW_WINDOW_ACTION:
+                    nav = decision.get_navigation_action()
+                    request = nav.get_request() if nav is not None else None
+                    uri = request.get_uri() if request is not None else None
+                    if uri:
+                        decision.ignore()
+                        GLib.idle_add(self._load_same_view, uri)
+                        return True
             except Exception:
                 pass
-            return None
+            return False
+
+        def _load_same_view(self, uri):
+            if self.webview is not None:
+                self.webview.load_uri(uri)
+            return False
 
         def _on_web_print(self, webview, print_operation):
             """Handle WebKit's native print signal (window.print() path).
