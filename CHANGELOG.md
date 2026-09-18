@@ -4,6 +4,25 @@ All notable changes to KhajaPOS are documented here. The project ships as two
 separate versions: the **Web (Browser)** version (this repository root) and the
 **Desktop App (Linux)** version (the `desktop/` folder).
 
+## [2.2.0] — 2026-09-18
+
+### Added
+- **Logo loading screen:** the desktop app now shows the KhajaPOS logo with a
+  gentle pulsing effect (plus spinner and status text) while the local server
+  boots.
+- **Full About dialog:** Help → About KhajaPOS now describes the whole
+  Restaurant Management System — features, role-based access, printing
+  (A4 + 80 mm thermal), plus technical details (server URL, systemd service,
+  database, config path, default login) and the MIT license.
+- **Printer support:** File → Print / `Ctrl+P` prints the current page
+  (invoice or 80 mm receipt) through the system print dialog, so any receipt
+  or office printer connected to the terminal can be used.
+- **Screenshot gallery:** the README now shows the full POS, dashboard, menu,
+  inventory, invoices, orders, settings and staff screens.
+
+### Changed
+- Desktop package bumped to `2.2.0` (`desktop/khajapos_2.2.0-1_all.deb`).
+
 ## [2.1.0] — 2026-09-17
 
 ### Added

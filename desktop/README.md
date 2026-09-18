@@ -6,8 +6,8 @@
 
 ### Restaurant Point of Sale, Inventory and Billing System
 
-[![Debian](https://img.shields.io/badge/Package-.deb-2ea043)](khajapos_2.1.0-1_all.deb)
-[![Version](https://img.shields.io/badge/Version-2.1.0-7c3aed)](khajapos_2.1.0-1_all.deb)
+[![Debian](https://img.shields.io/badge/Package-.deb-2ea043)](khajapos_2.2.0-1_all.deb)
+[![Version](https://img.shields.io/badge/Version-2.2.0-7c3aed)](khajapos_2.2.0-1_all.deb)
 [![License](https://img.shields.io/badge/License-MIT-brightgreen)](../LICENSE)
 
 </div>
@@ -35,16 +35,16 @@ Download the installer from the table below and save it anywhere
 
 | File | Size | Description |
 | ---- | ---- | ----------- |
-| [`khajapos_2.1.0-1_all.deb`](khajapos_2.1.0-1_all.deb) | ~30 MB | Debian / Ubuntu package (64-bit, all architectures) |
+| [`khajapos_2.2.0-1_all.deb`](khajapos_2.2.0-1_all.deb) | ~30 MB | Debian / Ubuntu package (64-bit, all architectures) |
 
 **Latest release:** download the newest build from the
 [KhajaPOS GitHub Releases page](https://github.com/ankitkhatrik6/KhajaPOS/releases)
-(`khajapos_2.1.0-1_all.deb` or newer).
+(`khajapos_2.2.0-1_all.deb` or newer).
 
 ### Checksum (optional)
 
 ```bash
-sha256sum ~/Downloads/khajapos_2.1.0-1_all.deb
+sha256sum ~/Downloads/khajapos_2.2.0-1_all.deb
 ```
 
 ## 2. System requirements
@@ -62,7 +62,7 @@ Open a terminal in the folder where you downloaded the file and run:
 
 ```bash
 cd ~/Downloads
-sudo apt install ./khajapos_2.1.0-1_all.deb
+sudo apt install ./khajapos_2.2.0-1_all.deb
 ```
 
 What happens during installation (first time):
@@ -97,10 +97,14 @@ khajapos open          # start the server and open the browser instead
 
 | Key     | Action                      |
 | ------- | --------------------------- |
+| `Ctrl+P` | Print the invoice / receipt (system print dialog) |
 | `Ctrl+R` | Reload the POS            |
 | `Ctrl+B` | Open in the web browser   |
 | `F11`    | Toggle fullscreen         |
 | `Ctrl+Q` | Quit                      |
+
+> **Printing:** select the 80 mm thermal receipt option (or the A4 invoice)
+> in the POS, then press `Ctrl+P` / **File → Print** and pick your printer.
 
 ## 5. Sign in
 

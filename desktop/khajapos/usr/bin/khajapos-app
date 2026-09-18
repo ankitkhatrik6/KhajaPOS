@@ -23,6 +23,7 @@ import urllib.request
 
 URL = "http://127.0.0.1:3000"
 SERVICE = "khajapos.service"
+APP_VERSION = "2.2.0"
 ICON_PATHS = (
     "/usr/share/pixmaps/khajapos.png",
     "/usr/share/icons/hicolor/512x512/apps/khajapos.png",
@@ -197,6 +198,7 @@ def run_gui() -> int:
             for keyval, mod, action in (
                 (_gdk.KEY_r, ctrl, lambda *_: self._reload()),
                 (_gdk.KEY_b, ctrl, lambda *_: open_in_browser()),
+                (_gdk.KEY_p, ctrl, lambda *_: self._print_current()),
                 (_gdk.KEY_q, ctrl, lambda *_: Gtk.main_quit()),
                 (_gdk.KEY_F11, 0, lambda *_: self.toggle_fullscreen()),
                 (_gdk.KEY_plus, 0, lambda *_: self._zoom(1)),
@@ -219,6 +221,7 @@ def run_gui() -> int:
 
             mb = Gtk.MenuBar()
             mb.append(submenu("_File", [
+                ("Print Invoice / Receipt  (Ctrl+P)", lambda *_: self._print_current()),
                 ("Reload", lambda *_: self._reload()),
                 ("Open in Browser", lambda *_: open_in_browser()),
                 ("Quit", lambda *_: Gtk.main_quit()),
@@ -233,15 +236,48 @@ def run_gui() -> int:
             ]))
             return mb
 # ------------------------------------------------------------ screens
+        def _logo_pixbuf(self, width=180, height=180):
+            """Load and scale the KhajaPOS logo for the loading screen."""
+            for path in ICON_PATHS:
+                if os.path.exists(path):
+                    try:
+                        return GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                            path, width, height, True
+                        )
+                    except Exception:
+                        continue
+            return None
+
         def _build_loading(self):
-            box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+            box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
             box.set_valign(Gtk.Align.CENTER)
             box.set_halign(Gtk.Align.CENTER)
-            spinner = Gtk.Spinner()
-            spinner.set_size_request(56, 56)
-            spinner.start()
+
+            # KhajaPOS logo with a gentle pulsing effect while the server boots
+            self.logo_image = Gtk.Image()
+            pixbuf = self._logo_pixbuf()
+            if pixbuf is not None:
+                self.logo_image.set_from_pixbuf(pixbuf)
+            self.logo_image.set_opacity(0.8)
+            self._fade_dir = -1
+            self._fade_step = 0.07
+
             title = Gtk.Label()
-            _safe_markup(title, '<span size="xx-large" weight="bold">KhajaPOS</span>')
+            _safe_markup(
+                title, '<span size="xx-large" weight="bold">KhajaPOS</span>'
+            )
+
+            subtitle = Gtk.Label()
+            _safe_markup(
+                subtitle,
+                '<span size="medium" color="#7c3aed">Restaurant Point of Sale, '
+                "Inventory & Billing System</span>",
+            )
+
+            self.spinner = Gtk.Spinner()
+            self.spinner.set_size_request(36, 36)
+            self.spinner.start()
+
             self.loading_label = Gtk.Label()
             _safe_markup(
                 self.loading_label,
@@ -249,10 +285,40 @@ def run_gui() -> int:
                 '<span size="small">Your point of sale opens here in a '
                 "moment.</span>",
             )
-            box.pack_start(spinner, False, False, 0)
+
+            box.pack_start(self.logo_image, False, False, 0)
             box.pack_start(title, False, False, 0)
+            box.pack_start(subtitle, False, False, 0)
+            box.pack_start(self.spinner, False, False, 0)
             box.pack_start(self.loading_label, False, False, 0)
+
+            GLib.timeout_add(50, self._pulse_logo)
             return box
+
+        def _pulse_logo(self):
+            """Pulse the logo opacity while the loading screen is visible.
+
+            Returns True to keep animating; returns False (stops the timer)
+            as soon as the webview has taken over the window.
+            """
+            if self.stack.get_visible_child_name() != "loading":
+                return False
+            try:
+                if self.logo_image is not None:
+                    opacity = (
+                        self.logo_image.get_opacity()
+                        + self._fade_dir * self._fade_step
+                    )
+                    if opacity <= 0.45:
+                        opacity = 0.45
+                        self._fade_dir = 1
+                    elif opacity >= 1.0:
+                        opacity = 1.0
+                        self._fade_dir = -1
+                    self.logo_image.set_opacity(opacity)
+            except Exception:
+                return False
+            return True
 
         def _build_error(self):
             box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
@@ -287,6 +353,8 @@ def run_gui() -> int:
                 self._ensure_started = True
                 threading.Thread(target=ensure_services, daemon=True).start()
             if time.monotonic() - self._start_check > STARTUP_TIMEOUT_S:
+                if self.spinner is not None:
+                    self.spinner.stop()
                 self.stack.set_visible_child_name("error")
                 return False
             self.loading_label.set_text(
@@ -299,10 +367,14 @@ def run_gui() -> int:
             self._ensure_started = False
             self._start_check = time.monotonic()
             self.stack.set_visible_child_name("loading")
+            if self.spinner is not None:
+                self.spinner.start()
             self.loading_label.set_text("Retrying... please wait.")
             GLib.timeout_add(POLL_DELAY_MS, self._poll_startup)
 
         def _load_app(self):
+            if self.spinner is not None:
+                self.spinner.stop()
             if self.webview is not None:
                 GLib.idle_add(self.stack.set_visible_child_name, "app")
                 self.webview.reload()
@@ -317,6 +389,8 @@ def run_gui() -> int:
             self.stack.set_visible_child_name("app")
 
         def _on_load_failed(self, *_args):
+            if self.spinner is not None:
+                self.spinner.stop()
             if self.webview is not None:
                 self.stack.set_visible_child_name("error")
 
@@ -336,14 +410,56 @@ def run_gui() -> int:
             else:
                 self.fullscreen()
 
+        def _print_current(self):
+            """Print the current page with the system print dialog.
+
+            WebKit's embedded view has no visible print button of its own, so
+            printing an invoice (A4) or a thermal receipt (80 mm) is exposed
+            through File > Print and Ctrl+P. The standard print dialog lets
+            the user pick the receipt / office printer and page setup, exactly
+            like printing from a web browser.
+            """
+            if self.webview is None:
+                return False
+            try:
+                operation = WebKit2.PrintOperation.new(self.webview)
+                operation.set_show_progress(True)
+                operation.run_dialog(None)
+            except Exception as exc:
+                print("KhajaPOS: printing failed - %s" % exc, file=sys.stderr)
+            return False
+
+        def _read_license(self):
+            """Return the MIT license text shipped with the application."""
+            try:
+                with open("/opt/khajapos/LICENSE", encoding="utf-8") as fh:
+                    return fh.read()
+            except Exception:
+                return (
+                    "MIT License\n\n"
+                    "Copyright (c) 2026 Ankit Khatri KC\n\n"
+                    "Permission is hereby granted, free of charge, to any person "
+                    "obtaining a copy of this software and associated documentation "
+                    "files (the \"Software\"), to deal in the Software without "
+                    "restriction, including without limitation the rights to use, "
+                    "copy, modify, merge, publish, distribute, sublicense, and/or "
+                    "sell copies of the Software.\n..."
+                )
+
         def _about(self):
-            dlg = Gtk.AboutDialog()
+            """About dialog describing the whole Restaurant Management System."""
+            dlg = Gtk.AboutDialog(transient_for=self)
             dlg.set_program_name("KhajaPOS")
-            dlg.set_version("2.1.0")
+            dlg.set_version(APP_VERSION)
             dlg.set_comments(
                 "Restaurant Point of Sale, Inventory and Billing System.\n"
-                "Runs as a local server at http://localhost:3000"
+                "Runs as a local server at http://localhost:3000."
             )
+            dlg.set_copyright("Copyright (c) 2026 Ankit Khatri KC")
+            dlg.set_website("https://github.com/ankitkhatrik6/KhajaPOS")
+            dlg.set_website_label("KhajaPOS on GitHub")
+            dlg.set_authors(["Ankit Khatri KC <ankitkhatrik6@gmail.com>"])
+            dlg.set_artists(["Ankit Khatri KC"])
             for icon in ICON_PATHS:
                 if os.path.exists(icon):
                     try:
@@ -352,6 +468,62 @@ def run_gui() -> int:
                         pass
                     break
             dlg.set_license_type(Gtk.License.MIT_X11)
+            dlg.set_license(self._read_license())
+
+            # Extra panel: everything about the system
+            content = dlg.get_content_area()
+            details = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+            details.set_border_width(12)
+
+            header = Gtk.Label()
+            _safe_markup(
+                header, '<span size="large" weight="bold">About this system</span>'
+            )
+            details.pack_start(header, False, False, 0)
+
+            features = Gtk.Label()
+            features.set_xalign(0)
+            _safe_markup(
+                features,
+                "<b>What KhajaPOS does</b>\n"
+                "\u2022 POS billing terminal with instant item search and category filters\n"
+                "\u2022 Cash and online payments with automatic change calculation\n"
+                "\u2022 Raw-material inventory with low-stock alerts and stock history\n"
+                "\u2022 Menu management and category organisation\n"
+                "\u2022 VAT-compliant tax invoices - printable A4 and 80 mm thermal receipts\n"
+                "\u2022 Sales, payment-method and profit reports in NPR\n"
+                "\u2022 Role-based access (Admin / Cashier / Stock Manager)\n"
+                "\u2022 Live dashboard with sales trends and payment charts",
+            )
+            details.pack_start(features, False, False, 0)
+
+            placement = Gtk.Label()
+            placement.set_xalign(0)
+            placement.set_selectable(True)
+            _safe_markup(
+                placement,
+                "<b>Technical details</b>\n"
+                "Web server :  http://127.0.0.1:3000\n"
+                "Service    :  khajapos.service (systemd, auto-start at boot)\n"
+                "Database   :  restaurant_pos (MariaDB / MySQL)\n"
+                "Config     :  /etc/khajapos/.env  (sudo khajapos config)\n"
+                "Logs       :  /var/log/khajapos/\n"
+                "Access     :  http://localhost:3000 or a LAN IP on port 3000\n"
+                "Default admin: admin@khajapos.com / KhajaPOS@123",
+            )
+            details.pack_start(placement, False, False, 0)
+
+            hint = Gtk.Label()
+            _safe_markup(
+                hint,
+                '<span size="small" color="#666666">Print invoices and receipts '
+                "with File \u2192 Print or Ctrl+P - the A4 and 80 mm thermal "
+                "formats are supported by the web templates.</span>",
+            )
+            details.pack_start(hint, False, False, 0)
+
+            content.pack_start(details, True, True, 0)
+            content.show_all()
             dlg.run()
             dlg.destroy()
 # Build and show the main window, then run the GTK main loop.  The loop

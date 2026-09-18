@@ -17,7 +17,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DESKTOP="$ROOT/desktop"
 TREE="$DESKTOP/khajapos"
-VERSION="2.1.0"
+VERSION="2.2.0"
 
 cd "$ROOT"
 
