@@ -453,6 +453,7 @@ def run_gui() -> int:
             except Exception:
                 pass
             self._pending_print = False
+            self._printing = False
             web.load_uri(URL)
             self.webview = web
             self.stack.add_named(web, "app")
@@ -517,7 +518,18 @@ def run_gui() -> int:
             (printing, progress) entirely inside the regular GTK main
             loop. Errors are reported through the `failed` signal, which
             we log instead of crashing on.
+
+            Only one print operation runs at a time: a new request while
+            the dialog is open (rapid double click, autoprint + Ctrl+P)
+            would otherwise stack a second dialog on top of the first.
+            The `finished`/`failed` signals clear the guard again.
             """
+            if getattr(self, "_printing", False):
+                print(
+                    "KhajaPOS: a print job is already running - ignoring the new request",
+                    file=sys.stderr,
+                )
+                return
             try:
                 if hasattr(operation, "set_show_progress"):
                     try:
@@ -525,16 +537,25 @@ def run_gui() -> int:
                     except Exception:
                         pass
                 operation.connect("failed", self._on_print_failed)
+                operation.connect("finished", self._on_print_finished)
+                self._printing = True
                 operation.print_()
             except Exception as exc:
+                self._printing = False
                 print(
                     "KhajaPOS: could not start printing - %s" % exc,
                     file=sys.stderr,
                 )
                 self._print_browser_fallback()
 
+        def _on_print_finished(self, operation):
+            """Clear the one-print-at-a-time guard when the job ends."""
+            self._printing = False
+            return False
+
         def _on_print_failed(self, operation, error):
             """Log print errors instead of letting them take the app down."""
+            self._printing = False
             try:
                 message = error.message if hasattr(error, "message") else error
             except Exception:
