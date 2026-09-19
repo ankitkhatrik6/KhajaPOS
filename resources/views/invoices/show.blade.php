@@ -11,11 +11,11 @@
             <span>Back to Invoices</span>
         </a>
         <div class="flex items-center gap-2">
-            <a href="{{ route('invoices.receipt', $invoice->id) }}" target="_blank" class="px-4 py-2 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 shadow">
+            <a href="{{ route('invoices.receipt', $invoice->id) }}?autoprint=1" target="_blank" class="px-4 py-2 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 shadow">
                 <i data-lucide="receipt" class="w-4 h-4"></i>
                 <span>Thermal 80mm Receipt</span>
             </a>
-            <a href="{{ route('invoices.print', $invoice->id) }}" target="_blank" class="px-4 py-2 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5 shadow">
+            <a href="{{ route('invoices.print', $invoice->id) }}?autoprint=1" target="_blank" class="px-4 py-2 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5 shadow">
                 <i data-lucide="printer" class="w-4 h-4"></i>
                 <span>Print A4 Invoice</span>
             </a>

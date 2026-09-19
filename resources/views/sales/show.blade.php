@@ -19,7 +19,7 @@
                 &larr; Back to Sales
             </a>
             @if($sale->invoice)
-            <a href="{{ route('invoices.receipt', $sale->invoice->id) }}" target="_blank" class="px-3.5 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 shadow">
+            <a href="{{ route('invoices.receipt', $sale->invoice->id) }}?autoprint=1" target="_blank" class="px-3.5 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 shadow">
                 <i data-lucide="printer" class="w-4 h-4"></i>
                 <span>Print Thermal Receipt</span>
             </a>

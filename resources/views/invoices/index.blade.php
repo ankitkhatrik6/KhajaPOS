@@ -83,7 +83,7 @@
                                 <a href="{{ route('invoices.show', $invoice->id) }}" class="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-[11px]">
                                     View
                                 </a>
-                                <a href="{{ route('invoices.receipt', $invoice->id) }}" target="_blank" class="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[11px] flex items-center gap-1">
+                                <a href="{{ route('invoices.receipt', $invoice->id) }}?autoprint=1" target="_blank" class="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[11px] flex items-center gap-1">
                                     <i data-lucide="printer" class="w-3.5 h-3.5"></i>
                                     <span>Receipt</span>
                                 </a>

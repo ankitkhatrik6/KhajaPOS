@@ -119,7 +119,7 @@
                                 <a href="{{ route('invoices.show', $sale->invoice->id) }}" class="px-2 py-1 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold text-[11px] border border-emerald-200">
                                     Invoice
                                 </a>
-                                <a href="{{ route('invoices.receipt', $sale->invoice->id) }}" target="_blank" class="p-1 text-slate-400 hover:text-slate-800" title="80mm Thermal Receipt">
+                                <a href="{{ route('invoices.receipt', $sale->invoice->id) }}?autoprint=1" target="_blank" class="p-1 text-slate-400 hover:text-slate-800" title="80mm Thermal Receipt">
                                     <i data-lucide="printer" class="w-4 h-4"></i>
                                 </a>
                                 @endif
