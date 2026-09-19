@@ -108,8 +108,12 @@
 <body>
     <div class="actions no-print">
         <a href="{{ route('invoices.show', $invoice->id) }}" class="btn" style="background:#64748b;">&larr; Back</a>
-        <button onclick="window.print()" class="btn">Print 80mm Receipt</button>
+        <button onclick="openPrintDialog()" class="btn">Print 80mm Receipt</button>
     </div>
+    <p class="no-print" style="max-width:320px;margin:-4px auto 12px;font-size:10px;line-height:1.5;color:#64748b;text-align:center;">
+        The print dialog lets you choose any printer — a receipt printer, a normal printer or a
+        thermal 80&nbsp;mm printer — or <strong>Print to File</strong> to save the receipt as a PDF.
+    </p>
 
     <div class="receipt">
         <!-- Header -->
@@ -213,5 +217,27 @@
             <p style="margin-top:4px;">धन्यवाद ! फेरि आउनुहोला !</p>
         </div>
     </div>
+
+    <script>
+        // One-click printing: this page raises the system print dialog directly.
+        // The dialog lists every printer configured on this Linux machine —
+        // receipt printers, normal/office printers and thermal 80 mm printers —
+        // plus "Print to File", which saves the receipt as a PDF.
+        var openPrintDialog = (function () {
+            var triggered = false;
+            return function () {
+                if (triggered) return;
+                triggered = true;
+                window.print();
+            };
+        })();
+        @if(request()->query('autoprint'))
+        // Opened from a "Print ..." button (?autoprint=1): show the dialog as
+        // soon as the page has finished rendering, no second click needed.
+        window.addEventListener('load', function () {
+            setTimeout(openPrintDialog, 500);
+        });
+        @endif
+    </script>
 </body>
 </html>

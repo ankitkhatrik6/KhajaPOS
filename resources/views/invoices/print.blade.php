@@ -7,22 +7,28 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @media print {
+            @page { size: A4; margin: 10mm; }
             .no-print { display: none !important; }
-            body { padding: 0 !important; }
+            body { padding: 0 !important; background: #fff !important; }
         }
     </style>
 </head>
 <body class="bg-slate-100 p-6 text-slate-800 font-sans">
     <div class="max-w-2xl mx-auto bg-white p-8 border border-slate-200 shadow-sm rounded-xl print:border-none print:shadow-none print:p-0">
         <!-- Print Toolbar -->
-        <div class="mb-6 flex justify-between items-center no-print pb-4 border-b border-slate-200">
+        <div class="mb-3 flex justify-between items-center no-print pb-4 border-b border-slate-200">
             <a href="{{ route('invoices.show', $invoice->id) }}" class="text-xs text-slate-600 hover:text-slate-900 font-semibold">
                 &larr; Back to App
             </a>
-            <button onclick="window.print()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow">
+            <button onclick="openPrintDialog()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow">
                 Print Invoice Now
             </button>
         </div>
+        <p class="mb-6 text-center text-[11px] leading-relaxed text-slate-500 no-print">
+            The print dialog lets you choose any printer configured on this machine — a physical receipt
+            printer, a normal printer or a thermal 80&nbsp;mm printer — or select
+            <strong>Print&nbsp;to&nbsp;File</strong> to save this invoice as a PDF.
+        </p>
 
         <!-- Header -->
         <div class="text-center pb-6 border-b border-slate-300">
@@ -103,5 +109,27 @@
             <p class="text-[10px] text-slate-400 mt-1">Thank you for your visit!</p>
         </div>
     </div>
+
+    <script>
+        // One-click printing: this page raises the system print dialog directly.
+        // The dialog lists every printer configured on this Linux machine —
+        // receipt printers, normal/office printers and thermal 80 mm printers —
+        // plus "Print to File", which saves the invoice as a PDF.
+        var openPrintDialog = (function () {
+            var triggered = false;
+            return function () {
+                if (triggered) return;
+                triggered = true;
+                window.print();
+            };
+        })();
+        @if(request()->query('autoprint'))
+        // Opened from a "Print ..." button (?autoprint=1): show the dialog as
+        // soon as the page has finished rendering, no second click needed.
+        window.addEventListener('load', function () {
+            setTimeout(openPrintDialog, 500);
+        });
+        @endif
+    </script>
 </body>
 </html>
