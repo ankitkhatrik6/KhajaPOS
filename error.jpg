@@ -1,9 +1,0 @@
-ankit@ankit-kc:~/Downloads$ khajapos-app
-
-(khajapos-app:6418): Gtk-WARNING **: 15:48:04.741: Failed to set text '<span size="medium" color="#7c3aed">Restaurant Point of Sale, Inventory & Billing System</span>' from markup due to error parsing markup: Error on line 1: Entity did not end with a semicolon; most likely you used an ampersand character without intending to start an entity — escape ampersand as &amp;
-
-(khajapos-app:6418): Gtk-WARNING **: 15:48:04.742: Failed to set text '<span size="medium" color="#7c3aed">Restaurant Point of Sale, Inventory & Billing System</span>' from markup due to error parsing markup: Error on line 1: Entity did not end with a semicolon; most likely you used an ampersand character without intending to start an entity — escape ampersand as &amp;
-/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/optional:1179: const _Tp &std::optional<WebCore::WindowFeatures>::operator*() const & [_Tp = WebCore::WindowFeatures]: Assertion 'this->_M_is_engaged()' failed.
-Aborted (core dumped)
-
-haha

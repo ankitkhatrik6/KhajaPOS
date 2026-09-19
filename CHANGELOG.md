@@ -4,6 +4,41 @@ All notable changes to KhajaPOS are documented here. The project ships as two
 separate versions: the **Web (Browser)** version (this repository root) and the
 **Desktop App (Linux)** version (the `desktop/` folder).
 
+## [Unreleased]
+
+### Added
+- **One-click system print dialog.** Every print action — the POS checkout
+  *Print Thermal (80mm)* button, the invoice page's *Print A4 Invoice* and
+  *Thermal 80mm Receipt* buttons, the printer/Receipt buttons in the invoice
+  and sales lists, and *Print Thermal Receipt* on sale details — now opens
+  the Linux print dialog directly. The print pages carry `?autoprint=1`,
+  which raises the system dialog as soon as the page finishes rendering, so
+  choosing the destination needs no second click. The dialog lists every
+  printer configured on the machine — physical receipt printers, normal
+  printers and thermal 80 mm printers — plus *Print to File*, which saves
+  the invoice or receipt as a PDF.
+- The A4 invoice and 80 mm receipt print pages now tell the user which
+  choices the print dialog offers (receipt / normal / thermal 80 mm /
+  Print to File → PDF).
+
+### Fixed
+- The POS checkout modal's *Print Thermal (80mm)* button actually opened the
+  A4 tax invoice page (it linked to the `invoices.print` route); it now
+  opens the 80 mm receipt, matching its label.
+- The A4 tax invoice print page now declares `@page { size: A4;
+  margin: 10mm }` so the paper size is consistent across browsers and the
+  desktop app instead of falling back to the browser default.
+- Desktop app: requesting a print while another one was still running
+  (rapid double click, autoprint followed by Ctrl+P) could stack a second
+  print dialog on top of the first; print requests are now serialized and
+  the guard is cleared by the WebKit print operation's `finished`/`failed`
+  signals.
+
+### Changed
+- Desktop README printing section rewritten: which printers appear in the
+  print dialog, how to add receipt/thermal/office printers on Linux
+  (`lpadmin` examples) and the A4 / 80 mm page-size behaviour.
+
 ## [2.2.3] — 2026-09-18
 
 ### Fixed

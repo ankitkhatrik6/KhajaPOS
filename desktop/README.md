@@ -608,27 +608,37 @@ Access to:
 
 # 17. Printing
 
-KhajaPOS supports normal system printing.
+KhajaPOS supports normal system printing. Clicking any print action opens
+the Linux print dialog directly — no preview detour:
 
-Inside the desktop application:
+- POS checkout dialog → **Print Thermal (80mm)**
+- Invoice detail → **Print A4 Invoice** / **Thermal 80mm Receipt**
+- Invoice and sales lists → printer / **Receipt** buttons
+- `Ctrl + P` (or File → Print Invoice / Receipt) for the current page
 
-```text
-Ctrl + P
+In the print dialog you can choose where the job goes:
+
+| Choice | Use |
+| --- | --- |
+| Physical receipt printer | USB/network POS printer (58/80 mm) |
+| Normal printer | Office inkjet or laser printer (A4 tax invoices) |
+| Thermal 80mm printer | Dedicated 80 mm thermal receipt printer |
+| Print to File | Saves the invoice/receipt as a PDF |
+
+The dialog lists every printer configured on the machine and remembers the
+last-used printer. To add printers, use the desktop printer settings
+(GNOME/KDE Settings → Printers or `system-config-printer`), or CUPS:
+
+```bash
+# Example: add an 80 mm USB thermal printer
+sudo lpadmin -p Thermal80 -E -v usb://ACME/TH80 -m everywhere
+
+# Example: add a network receipt printer
+sudo lpadmin -p CounterReceipt -E -v socket://192.168.0.50:9100 -m everywhere
 ```
 
-For thermal receipts:
-
-```text
-80 mm
-```
-
-For standard invoices:
-
-```text
-A4
-```
-
-Select the appropriate printer from the system print dialog.
+Formats: A4 tax invoices print at `size: A4`, receipts are locked to
+`size: 80mm 297mm` so they never scale up to A4 paper.
 
 ---
 
