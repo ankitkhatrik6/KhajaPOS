@@ -86,7 +86,7 @@ class PosController extends Controller
                     'sale_id' => $sale->id,
                     'invoice_id' => $sale->invoice->id,
                     'invoice_number' => $sale->invoice->invoice_number,
-                    'print_url' => route('invoices.print', $sale->invoice->id),
+                    'print_url' => route('invoices.receipt', $sale->invoice->id) . '?autoprint=1',
                     'redirect_url' => route('invoices.show', $sale->invoice->id),
                 ]);
             }
