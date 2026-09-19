@@ -4,7 +4,7 @@ All notable changes to KhajaPOS are documented here. The project ships as two
 separate versions: the **Web (Browser)** version (this repository root) and the
 **Desktop App (Linux)** version (the `desktop/` folder).
 
-## [Unreleased]
+## [2.2.4] — 2026-09-19
 
 ### Added
 - **One-click system print dialog.** Every print action — the POS checkout
@@ -35,6 +35,7 @@ separate versions: the **Web (Browser)** version (this repository root) and the
   signals.
 
 ### Changed
+- Desktop package bumped to `2.2.4` (`desktop/khajapos_2.2.4-1_all.deb`).
 - Desktop README printing section rewritten: which printers appear in the
   print dialog, how to add receipt/thermal/office printers on Linux
   (`lpadmin` examples) and the A4 / 80 mm page-size behaviour.
