@@ -65,7 +65,7 @@ KhajaPOS runs in **two separate versions** of the same application so you can pi
 
 | Platform | Package | Version | Install command |
 | -------- | ------- | ------- | --------------- |
-| 🐧 Debian / Ubuntu | [khajapos_2.2.3-1_all.deb](desktop/khajapos_2.2.3-1_all.deb) | 2.2.3 | `sudo apt install ./khajapos_2.2.3-1_all.deb` |
+| 🐧 Debian / Ubuntu | [khajapos_2.2.4-1_all.deb](desktop/khajapos_2.2.4-1_all.deb) | 2.2.4 | `sudo apt install ./khajapos_2.2.4-1_all.deb` |
 | 🐧 Latest build | [GitHub Releases](https://github.com/ankitkhatrik6/KhajaPOS/releases) | latest | download the `.deb` from the release page |
 
 Full Linux download + setup instructions — requirements, install, launch, upgrade, uninstall and troubleshooting:
@@ -181,7 +181,7 @@ GTK/WebKit window with a local server. It installs PHP, MariaDB/MySQL, the
 server auto-start and the app menu entry automatically:
 
 ```bash
-sudo apt install ./khajapos_2.2.3-1_all.deb
+sudo apt install ./khajapos_2.2.4-1_all.deb
 khajapos app      # or click "KhajaPOS" in the application menu
 ```
 
