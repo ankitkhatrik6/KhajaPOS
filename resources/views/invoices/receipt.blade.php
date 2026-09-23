@@ -197,7 +197,7 @@
             </div>
             @endif
             <div class="totals-row">
-                <span>VAT (13%):</span>
+                <span>VAT ({{ $taxPercentage }}%):</span>
                 <span>Rs. {{ number_format($invoice->tax, 2) }}</span>
             </div>
 

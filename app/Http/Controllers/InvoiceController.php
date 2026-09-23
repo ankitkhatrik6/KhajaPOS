@@ -14,8 +14,12 @@ class InvoiceController extends Controller
         $query = Invoice::with(['sale.user'])->latest();
 
         if ($request->filled('search')) {
-            $query->where('invoice_number', 'like', "%{$request->search}%")
-                ->orWhere('customer_name', 'like', "%{$request->search}%");
+            // Grouped: without the closure the OR would escape any other
+            // constraint (role scoping, date filters) added to this query.
+            $query->where(function ($q) use ($request) {
+                $q->where('invoice_number', 'like', "%{$request->search}%")
+                    ->orWhere('customer_name', 'like', "%{$request->search}%");
+            });
         }
 
         $invoices = $query->paginate(15)->withQueryString();
@@ -25,19 +29,32 @@ class InvoiceController extends Controller
     public function show(Invoice $invoice)
     {
         $invoice->load(['sale.items.menuItem', 'sale.user', 'payments']);
-        return view('invoices.show', compact('invoice'));
+        $taxPercentage = $this->taxPercentage();
+        return view('invoices.show', compact('invoice', 'taxPercentage'));
     }
 
     public function print(Invoice $invoice)
     {
         $invoice->load(['sale.items.menuItem', 'sale.user', 'payments']);
-        return view('invoices.print', compact('invoice'));
+        $taxPercentage = $this->taxPercentage();
+        return view('invoices.print', compact('invoice', 'taxPercentage'));
     }
 
     public function receipt(Invoice $invoice)
     {
         $invoice->load(['sale.items.menuItem', 'sale.user', 'payments']);
-        return view('invoices.receipt', compact('invoice'));
+        $taxPercentage = $this->taxPercentage();
+        return view('invoices.receipt', compact('invoice', 'taxPercentage'));
+    }
+
+    /**
+     * VAT rate shown on the invoice screens and the printed tax invoice /
+     * receipt. This is the same `tax_percentage` setting PosService bills
+     * with, so the printed rate can never drift from the charged one.
+     */
+    private function taxPercentage(): float
+    {
+        return (float) RestaurantSetting::get('tax_percentage', 13.00);
     }
 
     /**

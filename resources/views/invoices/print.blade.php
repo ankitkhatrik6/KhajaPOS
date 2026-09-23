@@ -93,7 +93,7 @@
                 </div>
                 @endif
                 <div class="flex justify-between">
-                    <span>VAT (13%):</span>
+                    <span>VAT ({{ $taxPercentage }}%):</span>
                     <span class="font-mono">Rs. {{ number_format($invoice->tax, 2) }}</span>
                 </div>
                 <div class="pt-1 border-t border-slate-300 flex justify-between font-bold text-sm text-slate-900">

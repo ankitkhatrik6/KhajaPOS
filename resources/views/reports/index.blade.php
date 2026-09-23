@@ -125,9 +125,11 @@
                     <div class="flex items-center gap-2">
                         <span class="w-3 h-3 rounded-full 
                             {{ $method === 'Cash' ? 'bg-emerald-500' : '' }}
+                            {{ $method === 'Online' ? 'bg-amber-500' : '' }}
                             {{ $method === 'eSewa' ? 'bg-green-500' : '' }}
                             {{ $method === 'Khalti' ? 'bg-purple-500' : '' }}
-                            {{ $method === 'Card' ? 'bg-blue-500' : '' }}"></span>
+                            {{ $method === 'Card' ? 'bg-blue-500' : '' }}
+                            {{ !in_array($method, ['Cash', 'Online', 'eSewa', 'Khalti', 'Card']) ? 'bg-slate-400' : '' }}"></span>
                         <span class="font-bold text-slate-900">{{ $method }}</span>
                         <span class="text-slate-400">({{ $data['count'] }} orders)</span>
                     </div>
