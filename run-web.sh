@@ -2,10 +2,8 @@
 # ============================================================================
 # KhajaPOS - Web (Browser) version launcher
 # ----------------------------------------------------------------------------
-# Starts the XAMPP MySQL server and the Laravel web server, then opens the
-# application in the browser. The POS is served at:
-#
-#     http://localhost:3000
+# Starts the MySQL/MariaDB server and the Laravel web server. The POS is then
+# served at http://localhost:3000 - open that address in your browser.
 #
 # Usage:
 #     ./run-web.sh            start MySQL and the web server
