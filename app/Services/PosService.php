@@ -16,7 +16,10 @@ class PosService
         $totalCost = 0.00;
         $processedItems = [];
 
-        $taxPercentage = (float)RestaurantSetting::get('tax_percentage', 0.00);
+        // Default to the 13% Nepal VAT standard used across the UI when the
+        // setting row is missing, so the amount billed always matches the
+        // VAT rate shown on the POS screen and the printed invoice.
+        $taxPercentage = (float)RestaurantSetting::get('tax_percentage', 13.00);
 
         foreach ($cartItems as $cartItem) {
             $itemId = (int)($cartItem['item_id'] ?? 0);
