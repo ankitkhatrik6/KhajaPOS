@@ -14,8 +14,12 @@ class InvoiceController extends Controller
         $query = Invoice::with(['sale.user'])->latest();
 
         if ($request->filled('search')) {
-            $query->where('invoice_number', 'like', "%{$request->search}%")
-                ->orWhere('customer_name', 'like', "%{$request->search}%");
+            // Grouped: without the closure the OR would escape any other
+            // constraint (role scoping, date filters) added to this query.
+            $query->where(function ($q) use ($request) {
+                $q->where('invoice_number', 'like', "%{$request->search}%")
+                    ->orWhere('customer_name', 'like', "%{$request->search}%");
+            });
         }
 
         $invoices = $query->paginate(15)->withQueryString();
