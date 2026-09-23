@@ -37,6 +37,7 @@
                 <select name="payment_method" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-1 focus:ring-emerald-500">
                     <option value="">All Payment Methods</option>
                     <option value="Cash" {{ request('payment_method') === 'Cash' ? 'selected' : '' }}>Cash</option>
+                    <option value="Online" {{ request('payment_method') === 'Online' ? 'selected' : '' }}>Online</option>
                     <option value="eSewa" {{ request('payment_method') === 'eSewa' ? 'selected' : '' }}>eSewa</option>
                     <option value="Khalti" {{ request('payment_method') === 'Khalti' ? 'selected' : '' }}>Khalti</option>
                     <option value="Card" {{ request('payment_method') === 'Card' ? 'selected' : '' }}>Card</option>
@@ -96,9 +97,11 @@
                         <td class="py-3 px-4">
                             <span class="px-2 py-0.5 rounded text-[10px] font-bold 
                                 {{ $sale->payment_method === 'Cash' ? 'bg-emerald-50 text-emerald-800' : '' }}
+                                {{ $sale->payment_method === 'Online' ? 'bg-amber-50 text-amber-800' : '' }}
                                 {{ $sale->payment_method === 'eSewa' ? 'bg-green-100 text-green-800' : '' }}
                                 {{ $sale->payment_method === 'Khalti' ? 'bg-purple-100 text-purple-800' : '' }}
-                                {{ $sale->payment_method === 'Card' ? 'bg-blue-50 text-blue-800' : '' }}">
+                                {{ $sale->payment_method === 'Card' ? 'bg-blue-50 text-blue-800' : '' }}
+                                {{ !in_array($sale->payment_method, ['Cash', 'Online', 'eSewa', 'Khalti', 'Card']) ? 'bg-slate-100 text-slate-700' : '' }}">
                                 {{ $sale->payment_method }}
                             </span>
                         </td>
